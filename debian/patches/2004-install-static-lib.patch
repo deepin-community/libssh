@@ -1,0 +1,19 @@
+Description: Install the static library again
+Author: Laurent Bigonville <bigon@debian.org>
+
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -419,6 +419,13 @@ if (BUILD_STATIC_LIB)
+   if (WIN32)
+     target_compile_definitions(ssh-static PUBLIC "LIBSSH_STATIC")
+   endif (WIN32)
++
++  install(TARGETS
++            ssh-static
++          DESTINATION
++            ${LIB_INSTALL_DIR}/${OUTPUT_SUFFIX}
++          COMPONENT
++            libraries)
+ endif (BUILD_STATIC_LIB)
+ 
+ message(STATUS "Threads_FOUND=${Threads_FOUND}")

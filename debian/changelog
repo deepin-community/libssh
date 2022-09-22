@@ -1,0 +1,674 @@
+libssh (0.9.6-1) unstable; urgency=medium
+
+  * New upstream version 0.9.6:
+    - Fix possible heap-buffer overflow when rekeying with different key
+      exchange mechanism (Closes: #993046, CVE-2021-3634)
+  * Refresh 2004-install-static-lib.patch for new upstream version
+  * Bump Standards-Version to 4.6.0. No changes necessary.
+  * debian/control: Declare Rules-Requires-Root: no
+
+ -- Martin Pitt <mpitt@debian.org>  Sat, 28 Aug 2021 12:51:05 +0200
+
+libssh (0.9.5-1) unstable; urgency=medium
+
+  [ Laurent Bigonville ]
+  * New upstream version 0.9.5
+    - Fix a NULL pointer dereference in tftpserver.c if ssh_buffer_new returns
+      NULL. (Closes: #966560 CVE-2020-16135)
+  * Drop d/p/1004-hurd-ftbfs.patch, applied upstream
+  * Drop d/p/1005-reproducible-doc.patch, applied upstream
+  * debian/control: Add openssh-server to the BD
+
+  [ Sebastien Bacher ]
+  * debian/control: don't build with nacl, it's not needed when building
+    openssl, see https://bugs.libssh.org/T235 (Closes: #964134)
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 18 Nov 2020 10:01:23 +0100
+
+libssh (0.9.4-2) unstable; urgency=medium
+
+  [ Debian Janitor ]
+  * Trim trailing whitespace.
+  * Set debhelper-compat version in Build-Depends.
+  * Drop transition for old debug package migration.
+
+  [ Colin Watson ]
+  * Fix autopkgtests with OpenSSH 8.4p1 (closes: #974039).
+
+  [ Laurent Bigonville ]
+  * debian/copyright: Remove duplicate in the list of files (tests/torture.c)
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 12 Nov 2020 15:01:03 +0100
+
+libssh (0.9.4-1) unstable; urgency=medium
+
+  * New upstream release
+    - Fix possible DoS in client and server when handling AES-CTR keys with
+      OpenSSL (Closes: #956308 CVE-2020-1730)
+  * debian/control: Bump Standards-Version to 4.5.0 (no further changes)
+  * Add default debian/salsa-ci.yml file
+  * d/p/1004-hurd-ftbfs.patch: Fix FTBFS on hurd-i386 (Closes: #933015)
+  * d/p/1005-reproducible-doc.patch: Make the documentation reproducible
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 09 Apr 2020 22:27:02 +0200
+
+libssh (0.9.3-2) unstable; urgency=medium
+
+  * debian/rules: Rename libssh-gcrypt.a to libssh.a to ensure that the
+    correct static library is installed in the libssh-gcrypt-dev package
+
+ -- Laurent Bigonville <bigon@debian.org>  Sun, 15 Dec 2019 19:18:53 +0100
+
+libssh (0.9.3-1) unstable; urgency=medium
+
+  [ Laurent Bigonville ]
+  * New upstream release
+    - Fix an unsanitized location in scp that could lead to unwanted command
+      execution (Closes: #946548 CVE-2019-14889)
+    - d/p/1003-custom-lib-names.patch: Refreshed
+    - d/p/2003-disable-expand_tilde_unix-test.patch: Refreshed
+    - debian/rules: Fix the parameter name used to build the static library
+    - debian/patches/install_static_lib.patch: Install the static library again
+  * debian/control: Bump Standards-Version to 4.4.1 (no further changes)
+  * Bump debhelper compatibility to 12
+
+  [ Sebastien Bacher ]
+  * debian/tests/libssh-server:
+    - Use the correct compiler for proposed autopkgtest cross-testing
+      support. (Closes: #946536)
+
+ -- Laurent Bigonville <bigon@debian.org>  Sun, 15 Dec 2019 12:46:20 +0100
+
+libssh (0.9.0-1) unstable; urgency=medium
+
+  * New upstream release
+    - debian/*.symbols: Add newly exported symbols
+  * debian/control: Bump Standards-Version to 4.4.0 (no further changes)
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 11 Jul 2019 12:35:29 +0200
+
+libssh (0.8.7-1) unstable; urgency=medium
+
+  * New upstream bug fix release 0.8.7.
+    This fixes various crashes, buffer overflows, and other bugs.
+    Drop our three backported patches, they are included in this release
+    now. For details, see
+    https://git.libssh.org/projects/libssh.git/log/?h=stable-0.8
+  * autopkgtest: Check ssh server under valgrind.
+    This exposes a long-standing libssh bug with the curve25519-sha256 key
+    exchange algorithm, causing an "incorrect signature" failure on 32 bit
+    machines under valgrind. Add a hack to switch to a different algorithm,
+    until this is properly investigated and reported.
+
+ -- Martin Pitt <mpitt@debian.org>  Thu, 23 May 2019 08:55:12 +0000
+
+libssh (0.8.6-3) unstable; urgency=medium
+
+  [ Laurent Bigonville ]
+  * Add Built-Using field to track the version of nacl libssh has been
+    statically linked against
+
+  [ Martin Pitt ]
+  * autopkgtest: Let the server fork after opening the socket and print its
+    pid, to avoid a race between server and client. (Closes: #922073)
+  * 0003-pki_signature_from_rsa_blob-NULL-check.patch: pki: NULL check
+    pki_signature_from_rsa_blob result. Patch taken from upstream stable-0.8
+    branch.
+
+ -- Martin Pitt <mpitt@debian.org>  Mon, 11 Feb 2019 20:43:44 +0000
+
+libssh (0.8.6-2) unstable; urgency=medium
+
+  * 0001-dh-uninitialized-memory.patch: dh: Make sure we do not access
+    uninitialized memory.  Patch taken from upstream stable-0.8 branch.
+  * 0002-server-extensions.patch: server: Correctly handle extensions.
+    Fixes a regression introduced in 0.8.6 that breaks server-side host key
+    algorithm negotiation.  Patch taken from upstream stable-0.8 branch.
+    (Closes: #918892)
+  * Add Martin Pitt as co-maintainer, with Laurent's permission.
+  * Add autopkgtest: Add a mock ssh server implementation using libssh, and
+    test the OpenSSH client against it. This covers password and pubkey
+    authentication.
+
+ -- Martin Pitt <mpitt@debian.org>  Tue, 15 Jan 2019 09:51:01 +0000
+
+libssh (0.8.6-1) unstable; urgency=medium
+
+  * New upstream version 0.8.6
+  * debian/control: Bump Standards-Version to 4.3.0 (no further changes)
+  * debian/gbp.conf: s/git-buildpackage/buildpackage
+  * debian/control: Fix the phrasing of some short description, to please
+    lintian
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 29 Dec 2018 13:21:46 +0100
+
+libssh (0.8.5-1) unstable; urgency=medium
+
+  [ Laurent Bigonville ]
+  * New upstream release  (Closes: #913242)
+    - Fix regression with server-side keyboard-interactive authentication
+  * debian/watch: Fix the watch file so new version are properly displayed on
+    the tracker webpage
+  * debian/control: Mark -dev packages as Multi-Arch: same
+  * debian/*.symbols: Add Build-Depends-Package field
+  * Drop debian/upstream-signing-key.pgp, the recommended location is
+    debian/upstream/signing-key.asc
+  * debian/libssh-gcrypt-4.lintian-overrides: Fix the override so it's not
+    needed to update it at every release
+
+  [ Helmut Grohne ]
+  * Fix FTCBFS: Annotate python3 build dependency with :any. (Closes: #913115)
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 21 Nov 2018 13:38:38 +0100
+
+libssh (0.8.4-3) unstable; urgency=medium
+
+  * debian/rules: Do not run the tests in parallel, should fix some FTBFS
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 17 Oct 2018 09:17:49 +0200
+
+libssh (0.8.4-2) unstable; urgency=medium
+
+  * debian/rules: Only build the documentation if doxygen is installed and the
+    nodoc profile not set
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 16 Oct 2018 18:19:16 +0200
+
+libssh (0.8.4-1) unstable; urgency=medium
+
+  * New upstream version 0.8.4
+    - Fix authentication bypass in server code (CVE-2018-10933 Closes: #911149)
+  * debian/control: Bump Standards-Version to 4.2.1 (no further changes)
+  * Fix documentation generation
+  * debian/*.symbols: Add newly exported symbols
+  * debian/libssh-gcrypt-4.lintian-overrides: Update lintian-overrides file
+  * debian/rules: Re-enable unit testing, they were disabled by mistake since
+    0.8.0
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 16 Oct 2018 16:44:55 +0200
+
+libssh (0.8.1-1) unstable; urgency=medium
+
+  * New upstream version 0.8.1
+    - Fix Version field in pkg-config file (Closes: #906049)
+  * debian/*-dev.install: Install the libssh-config.cmake file
+  * debian/libssh-gcrypt-4.lintian-overrides: Adjust soname of the library
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 14 Aug 2018 09:43:56 +0200
+
+libssh (0.8.0-1) unstable; urgency=medium
+
+  * debian/watch: Update the URL to point to the new URL
+  * New upstream version 0.8.0 (Closes: #875872, #904958)
+  * Drop patches merged upstream and refresh the others
+  * Add python3 to the build-deps, required by the build system
+  * Remove the libssh_threads library that is not built upstream anymore.
+    Add Breaks against packages linking against this library
+  * debian/*.symbols: Update the symbols files
+  * debian/control: Bump Standards-Version to 4.2.0 (no further changes)
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 11 Aug 2018 15:55:18 +0200
+
+libssh (0.8.0~20170825.94fa1e38-2) unstable; urgency=medium
+
+  [ Matteo F. Vescovi ]
+  * debian/control:
+    - libnacl-dev b-dep added
+    - S-V bump 4.0.0 -> 4.1.4 (no changes needed)
+    - Vcs-* fields pointing to salsa
+  * debian/: symbols files updated
+  * debian/: debhelper bump 9 -> 11
+  * debian/rules:
+    - drop get-orig-source directive
+  * debian/libssh-doc.doc-base: paths updated
+  * debian/copyright: http:// -> https:// for format
+
+  [ Laurent Bigonville ]
+  * Fix installation of examples
+  * Drop debian/libssh-doc.manpages, the manpages are not generated anymore
+  * debian/*.symbols: Thighten the version for the new symbols
+  * debian/patches/1003-custom-lib-names.patch: Fix grammar to please lintian
+  * debian/control: Remove unnecessary Conflicts against libssh-2-doc and
+    libssh-2-dev packages (Closes: #885208)
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 07 Jun 2018 14:57:50 +0200
+
+libssh (0.8.0~20170825.94fa1e38-1) unstable; urgency=medium
+
+  [ Laurent Bigonville ]
+  * debian/watch: Verify the signature of the upstream tarball
+  * debian/libssh-gcrypt-4.lintian-overrides: Adjust the overrides
+
+  [ Matteo F. Vescovi ]
+  * New upstream git snapshot (based on commit 94fa1e38) (Closes: #828413)
+  * debian/patches/: patchset refreshed against snapshot release
+  * debian/: symbols files refreshed for snapshot release
+  * debian/control: bump OpenSSL b-dep to use 1.1 version
+  * debian/copyright: entries updated
+  * debian/copyright.in: drop useless file
+  * debian/patches/: patchset updated
+    - 2004-fix-upstream-version.patch added
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 13 Sep 2017 14:36:14 +0200
+
+libssh (0.7.5-1) unstable; urgency=medium
+
+  * New upstream release.
+  * debian/control: Bump Standards-Version to 4.0.0 (no further changes)
+  * debian/libssh-gcrypt-4.lintian-overrides: Adjust library soname to the new
+    release
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 03 Jul 2017 15:29:04 +0200
+
+libssh (0.7.3-2) unstable; urgency=medium
+
+  * debian/control: Explicitly build against openssl1.0 for now as libssh
+    doesn't support 1.1 yet (Closes: #828413, #845197)
+  * debian/copyright: Fix short licence for files in the public domain.
+  * debian/copyright: More fixes to the copyright file
+  * debian/rules: Enable all hardening flags
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 29 Nov 2016 15:58:36 +0100
+
+libssh (0.7.3-1) unstable; urgency=medium
+
+  * New upstream release. (Closes: #805030)
+    - debian/control: Bump build-dependencies
+    - Update the .symbols files, add the new exported symbols
+    - Drop 0001_CVE-2014-8132.patch, 0002_CVE-2015-3146.patch,
+      0003_CVE-2016-0739.patch: Applied upstream
+    - 1003-custom-lib-names.patch, 2003-disable-expand_tilde_unix-test.patch:
+      Refreshed
+    - Drop 2002-fix-html-doc-generation.patch, gcc-5.diff: Not needed anymore
+  * Drop -dbg package and rely on the automatically built -dbgsym ones
+  * debian/control: Bump Standards-Version to 3.9.8 (no further changes)
+  * debian/control: Use https URL's for Vcs-* and Homepage fields
+  * debian/copyright: Updated
+
+ -- Laurent Bigonville <bigon@debian.org>  Fri, 10 Jun 2016 00:27:07 +0200
+
+libssh (0.6.3-4.3) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * CVE-2016-0739: Truncated Diffie-Hellman secret length (Closes: #815663)
+
+ -- Salvatore Bonaccorso <carnil@debian.org>  Tue, 23 Feb 2016 19:54:04 +0100
+
+libssh (0.6.3-4.2) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * debian/patches: Add 0002_CVE-2015-3146.patch from 0.6.5 release upstream
+    (Closes: #784404)
+
+ -- Christopher Knadle <Chris.Knadle@coredump.us>  Mon, 16 Nov 2015 04:26:51 -0500
+
+libssh (0.6.3-4.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Fix "ftbfs with GCC-5": add patch from Matthias Klose/Ubuntu:
+    add __extension__ to __FUNCTION__.
+    (Closes: #777975)
+
+ -- gregor herrmann <gregoa@debian.org>  Sat, 18 Jul 2015 20:38:30 +0200
+
+libssh (0.6.3-4) unstable; urgency=medium
+
+  * Add debian/patches/0001_CVE-2014-8132.patch: Fixup error path in
+    ssh_packet_kexinit() (Closes: #773577, CVE-2014-8132)
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 27 Jan 2015 00:28:01 +0100
+
+libssh (0.6.3-3) unstable; urgency=low
+
+  [ Sebastian Ramacher ]
+  * Build gcrypt flavor. (Closes: #676650)
+  * d/control:
+    - Add Build-Dep on libgcrypt-dev.
+    - Bump Build-Dep on debhelper to >= 9 and remove cdbs.
+    - Add libssh-gcrypt-dev and libssh-gcrypt-4 packages.
+    - Add Conflicts to libssh-dev and libssh-gcrypt-dev against each other.
+    - Add Depends on libssh-gcrypt-4 to libssh-dbg and break incompatible
+      versions.
+    - Update libssh-4 and libssh-dev Description.
+  * d/compat: Bump to 9.
+  * d/rules: Convert to dh and build gcrypt flavor.
+  * d/libssh-doc.docs: Update location of documentation.
+  + d/patches/1003-custom-lib-names.patch: Allow to overwrite libssh's
+    OUTPUT_NAME.
+
+  [ Laurent Bigonville ]
+  * debian/libssh-gcrypt-4.lintian-overrides: Add an override for
+    the dev-pkg-without-shlib-symlink lintian warning
+  * debian/control, debian/rules: Enable the tests at build time, really
+    (Closes: #744403)
+  * debian/control: Add pkg-config to the build-dependencies
+  * d/p/2003-disable-expand_tilde_unix-test.patch: Disable
+    torture_path_expand_tilde_unix it's not working well on the buildd
+  * d/p/0007-security-fix-for-vulnerability-CVE-2014-0017.patch: Drop obsolete
+    patch, merged upstream in 0.6.3
+  * debian/rules: Pass -Wl,-z,defs -Wl,-O1 -Wl,--as-needed to the LDFLAGS
+  * Enable GSSAPI support
+    - debian/control: Add libkrb5-dev | heimdal-dev to the build-dependencies
+    - debian/rules: Pass -DWITH_GSSAPI=ON to the CMake flags
+    - Adjust the .symbols file
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 30 Aug 2014 17:31:14 +0200
+
+libssh (0.6.3-2) unstable; urgency=low
+
+  [ Mike Gabriel ]
+  * debian/rules:
+    + Enable tests during package build. (Closes: #744403).
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 14 May 2014 10:19:23 +0200
+
+libssh (0.6.3-1) unstable; urgency=low
+
+  * Upload to unstable without changes.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 14 May 2014 09:43:04 +0200
+
+libssh (0.6.3-1~exp1) experimental; urgency=medium
+
+  * New upstream release.
+    - Reset the PRNG state after accepting a new connection (CVE-2014-0017)
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 05 Mar 2014 23:02:10 +0100
+
+libssh (0.6.1-1~exp1) experimental; urgency=low
+
+  * New upstream release.
+  * debian/control:
+    + Bump Standards: to 3.9.5. No changes needed.
+  * debian/patches:
+    + Remove obsolete patches (all applied upstream).
+    + Add patch for fixing typos in upstream error messages.
+  * Provide upstream signing key in package.
+  * Update debian/libssh-4.symbols file.
+  * Update debian/copyright.in file.
+  * Update debian/copyright file.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Wed, 19 Feb 2014 12:54:32 +0100
+
+libssh (0.5.4-3) unstable; urgency=high
+
+  [ Mike Gabriel ]
+  * debian/rules:
+    + Add get-orig-source rule.
+  * debian/watch:
+    + Handle tar.gz and tar.xz upstream tarballs alike.
+  * debian/copyright.in:
+    + Ship auto-generated copyright file in debian/ folder.
+
+  [ Laurent Bigonville ]
+  * debian/patches/0007-security-fix-for-vulnerability-CVE-2014-0017.patch:
+    Reset the PRNG state after accepting a new connection (CVE-2014-0017)
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 05 Mar 2014 22:42:19 +0100
+
+libssh (0.5.4-2) unstable; urgency=low
+
+  * debian/control:
+    + Add myself to Uploaders: field as discussed with current
+      maintainer on IRC (#debian-devel) on 2014-02-17.
+    + Alioth-canonicalize Vcs-* fields.
+  * debian/copyright:
+    + Make copyright file DEP-5 compliant.
+    + Relicense debian/* files under all licenses used by upstream.
+      Copyright holders' agreements can be found in the related
+      bug report in Debian BTS. (Closes: #739372).
+  * debian/patches:
+    + Add patch 0004-reset-global-request-status.patch: Allow requesting
+      more than one channel per session.
+    + Add patch 0005-multi-reverse-fwd.patch: Ease handling of multiple
+      reverse port forwarding requests per session. (Closes: #736231).
+    + Add patch 0006-ssh-handle-package-zero-timeouts.patch: Handle
+      zero timeouts as such. Improves speed on libssh issued
+      connections. (Closes: #738667).
+  * Update libssh-4.symbols file with new symbol introduced by patch
+    0005-multi-reverse-fwd.patch.
+
+ -- Mike Gabriel <sunweaver@debian.org>  Tue, 18 Feb 2014 13:34:13 +0100
+
+libssh (0.5.4-1) unstable; urgency=low
+
+  * New upstream security release
+    - Fix NULL dereference leads to denial of service
+      (Closes: #698963, CVE-2013-0176)
+  * debian/patches/0003-fix-typo.patch: Fix typo in error message
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 05 Feb 2013 01:06:40 +0100
+
+libssh (0.5.3-1) unstable; urgency=high
+
+  * New upstream security release
+    - Fixes CVE-2012-4559, CVE-2012-4560, CVE-2012-4561, CVE-2012-4562
+    - Fix regression in pre-connected socket setting (Closes: #688700)
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 21 Nov 2012 13:53:14 +0100
+
+libssh (0.5.2-1) unstable; urgency=low
+
+  * New upstream release
+    - Fix bug with ssh_channel_write (Closes: #631950)
+  * debian/watch: Use new tarball location
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 19 Sep 2011 12:01:26 +0200
+
+libssh (0.5.1-1) unstable; urgency=low
+
+  * New upstream release (Closes: #637445)
+  * debian/patches/0001-rename-threads-static.patch,
+    debian/patches/0002-Check-for-NULL-pointers-in-string-c.patch: Dropped
+  * debian/rules:
+    - Adjust rule that build documentation
+  * debian/patches/0001-disable-latex-documentation.patch: Disable LaTeX
+    documentation generation (Closes: #622108)
+  * debian/control: Drop texlive-fonts-recommended build-dependency
+  * debian/patches/0002-fix-html-doc-generation.patch: Fix HTML doc generation
+    (LP: #821437)
+  * debian/libssh-doc.doc-base: Refine Title and Files glob
+
+ -- Laurent Bigonville <bigon@debian.org>  Fri, 19 Aug 2011 00:46:48 +0200
+
+libssh (0.5.0-2) unstable; urgency=low
+
+  * debian/patches/0002-Check-for-NULL-pointers-in-string-c.patch:
+    Consolidate patch (Should fix previous REJECT)
+  * Support multiarch spec
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 15 Jun 2011 15:48:07 +0200
+
+libssh (0.5.0-1) unstable; urgency=low
+
+  * New upstream release
+  * debian/control:
+    - Bump Standards-Version to 3.9.2 (no further changes)
+    - Fix short description to please lintian
+  * debian/libssh-dev.install:
+    - Remove "static" from the static library name
+    - Install pkg-config file
+  * debian/libssh-4.symbols: Add new symbols to .symbols file
+  * debian/patch/0001-rename-threads-static.patch:
+    Rename libssh_threads_static.so to libssh_threads.so
+  * debian/libssh-4.install, debian/libssh-dev.install, debian/libssh-4.symbols,
+    debian/libssh-4.lintian-overrides: Install libssh_threads library
+  * debian/patches/0002-Check-for-NULL-pointers-in-string-c.patch:
+    Check if string is NULL.
+
+ -- Laurent Bigonville <bigon@debian.org>  Fri, 10 Jun 2011 22:47:54 +0200
+
+libssh (0.4.8-2) unstable; urgency=low
+
+  * Upload to unstable
+  * debian/control: Add texlive-fonts-recommended to Build-Depends-Indep
+    (Closes: #608319)
+
+ -- Laurent Bigonville <bigon@debian.org>  Sun, 13 Mar 2011 22:06:00 +0100
+
+libssh (0.4.8-1) experimental; urgency=low
+
+  * New upstream release
+  * Bump debhelper compatibility to 8
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 17 Jan 2011 19:31:47 +0100
+
+libssh (0.4.7-1) experimental; urgency=low
+
+  * New upstream release
+    - Drop all patches, applied upstream
+  * debian/watch: Fix URL regex
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 04 Jan 2011 21:24:34 +0100
+
+libssh (0.4.6-1) experimental; urgency=low
+
+  * New upstream release
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 13 Dec 2010 23:30:03 +0100
+
+libssh (0.4.5-3) unstable; urgency=low
+
+  * d/p/0002-socket-Fixed-uninitialized-fd-revents-member.patch:
+    Fix uninitialized memory use (Closes: #606347)
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 11 Dec 2010 01:33:45 +0100
+
+libssh (0.4.5-2) unstable; urgency=low
+
+  * Add d/p/0001-socket.c-Fixed-setting-max_fd-which-breaks-ssh_selec.patch:
+    Fix slow response in Remmina SSH (Closes: #599687, LP: #663777)
+  * debian/control: Bump Standards-Version to 3.9.1 (no futher changes)
+  * debian/copyright: Update copyright file to please lintian
+
+ -- Laurent Bigonville <bigon@debian.org>  Wed, 20 Oct 2010 20:45:48 +0200
+
+libssh (0.4.5-1) unstable; urgency=low
+
+  * New upstream release
+  * Bump Standards-Version to 3.9.0 (no further changes)
+  * Move doxygen to Build-Depends-Indep
+
+ -- Laurent Bigonville <bigon@debian.org>  Sun, 18 Jul 2010 22:48:10 +0200
+
+libssh (0.4.4-1) unstable; urgency=low
+
+  * New upstream release
+    - Should fix ~/.ssh directory access (Closes: #582461)
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 31 May 2010 20:10:56 +0200
+
+libssh (0.4.3-1) unstable; urgency=low
+
+  * New upstream release
+    - Drop 0001-Fix-symbols-visibility.patch, applied upstream
+    - Update debian/libssh-4.symbols: Add new symbol
+
+ -- Laurent Bigonville <bigon@debian.org>  Tue, 18 May 2010 21:06:33 +0200
+
+libssh (0.4.2-1) unstable; urgency=low
+
+  * New upstream release
+    - 0001-Fix-symbols-visibility.patch: Only export needed symbols
+    - debian/libssh-4.symbols: Update symbols file
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 25 Mar 2010 13:38:35 +0100
+
+libssh (0.4.1-1) unstable; urgency=low
+
+  * New upstream release
+  * debian/control: Bump Standards-Version (no further changes)
+  * Use new source package format '3.0 (quilt)'
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 13 Feb 2010 20:18:18 +0100
+
+libssh (0.4.0-1) unstable; urgency=low
+
+  * New upstream release.
+    - Bump soname
+    - Adjust .symbols file
+  * Readd static library in -dev package
+  * Let dh_lintian install override file
+  * debian/README.Debian: Update file
+  * debian/rules: Add list-missing rule
+
+ -- Laurent Bigonville <bigon@debian.org>  Sat, 12 Dec 2009 14:29:12 +0100
+
+libssh (0.3.4-3) unstable; urgency=low
+
+  * Add correct Conflicts/Replaces for -dev and -doc packages
+    (Closes: #550996)
+
+ -- Laurent Bigonville <bigon@debian.org>  Thu, 15 Oct 2009 09:59:57 +0200
+
+libssh (0.3.4-2) unstable; urgency=low
+
+  * debian/watch: Update the URL
+  * debian/copyright: Add missing licence for some cmake/Modules files
+
+ -- Laurent Bigonville <bigon@debian.org>  Mon, 12 Oct 2009 09:37:03 +0200
+
+libssh (0.3.4-1) unstable; urgency=low
+
+  * New upstream release (Closes: #467284).
+    - Adjust build-deps and use cmake
+    - Bump soname and adjust .symbols file
+  * debian/control:
+    - Use my debian.org address in Uploaders and takeover the package
+      with Jean-Philippe permission
+    - Use now official Vcs-* field
+    - Use new Homepage field instead of old pseudo-field
+    - Bump Standards-Version to 3.8.3 (no further changes)
+    - Use debug section for -dbg package
+    - Add ${misc:Depends} to please lintian
+    - Remove duplicate section to please lintian
+  * debian/libssh-2-doc.doc-base: Fix doc-base-uses-applications-section
+  * Bump debhelper version to 7
+  * debian/libssh-dev.install: do not install .la file and static
+    library anymore
+  * debian/libssh-3.lintian-overrides: Update override
+  * debian/copyright: Update copyright file
+  * debian/libssh-3.symbols: Add initial symbols file
+
+ -- Laurent Bigonville <bigon@debian.org>  Fri, 09 Oct 2009 21:21:16 +0200
+
+libssh (0.2+svn20070321-4) unstable; urgency=low
+
+  * debian/control:
+    - Add XS-Vcs-Svn and XS-Vcs-Browser fields.
+    - Change to ${binary:Version} for versionized dependencies.
+  * Add debian/README.Debian to disambiguate the package name
+
+ -- Laurent Bigonville <bigon@bigon.be>  Fri, 27 Jul 2007 15:00:06 +0200
+
+libssh (0.2+svn20070321-3) unstable; urgency=low
+
+  * Fix wrong versionized Replaces for -doc package
+
+ -- Laurent Bigonville <bigon@bigon.be>  Thu,  5 Apr 2007 17:58:27 +0200
+
+libssh (0.2+svn20070321-2) unstable; urgency=low
+
+  * Split devel package into devel and documentation packages
+
+ -- Laurent Bigonville <bigon@bigon.be>  Mon, 26 Mar 2007 15:29:51 +0200
+
+libssh (0.2+svn20070321-1) unstable; urgency=low
+
+  * New svn snapshot:
+    - Fix broken include in include/libssh/server.h (Closes: #410020)
+    - Fix nasty bug in server side code
+
+ -- Laurent Bigonville <bigon@bigon.be>  Mon, 26 Mar 2007 15:06:40 +0200
+
+libssh (0.2-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Laurent Bigonville <bigon@bigon.be>  Fri, 29 Dec 2006 07:40:20 +0100
+
+libssh (0.2~rc-1) unstable; urgency=low
+
+  * Initial release (Closes: #316872)
+
+ -- Jean-Philippe Garcia Ballester <giga@le-pec.org>  Wed, 20 Dec 2006 23:56:50 +0100

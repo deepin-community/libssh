@@ -1,0 +1,68 @@
+#!/bin/sh
+set -eu
+
+PORT=1234
+
+check_out() {
+    if [ "$OUT" != "$(cat /etc/os-release)" ]; then
+        echo "ssh command output does not match /etc/os-release:" >&2
+        echo "$OUT" >&2
+        exit 1
+    fi
+}
+
+waitpid() {
+    while kill -n 0 $1 2>/dev/null; do
+        sleep 0.1
+    done
+}
+
+if [ -n "${DEB_HOST_GNU_TYPE:-}" ]; then
+    CROSS_COMPILE="$DEB_HOST_GNU_TYPE-"
+else
+    CROSS_COMPILE=
+fi
+
+# change to debian/tests so that mock-sshd can find its keys
+cd $(dirname $(realpath $0))
+SSHD="$AUTOPKGTEST_TMP/mock-sshd"
+
+# build server
+${CROSS_COMPILE}gcc -O0 -g -o "$SSHD" mock-sshd.c $(${CROSS_COMPILE}pkg-config --cflags --libs glib-2.0 libssh) -lutil
+
+echo "====== password authentication ======"
+
+# run server
+SERVER_PID=$($SSHD --user=joe --password=$(./mock-ssh-askpass) --port $PORT -v)
+
+OUT=$(DISPLAY= SSH_ASKPASS=`pwd`/mock-ssh-askpass SSH_ASKPASS_REQUIRE=force setsid ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p $PORT joe@localhost cat /etc/os-release)
+
+waitpid $SERVER_PID
+check_out
+
+echo "====== pubkey authentication ======"
+
+# run server
+SERVER_PID=$($SSHD --user=joe --port $PORT -v)
+
+chmod 600 test_rsa
+OUT=$(ssh -i test_rsa -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -p $PORT joe@localhost cat /etc/os-release)
+
+waitpid $SERVER_PID
+check_out
+
+echo "====== password authentication with valgrind ======"
+
+# run server
+SERVER_PID=$(valgrind $SSHD --user=joe --password=$(./mock-ssh-askpass) --port $PORT -v)
+
+# HACK: default curve25519-sha256 algorithm fails under valgrind and 32 bit OSes
+EXTRA_OPTS=""
+if [ "$(getconf LONG_BIT)" = 32 ]; then
+    EXTRA_OPTS="$EXTRA_OPTS -o KexAlgorithms=ecdh-sha2-nistp256"
+fi
+
+OUT=$(DISPLAY= SSH_ASKPASS=`pwd`/mock-ssh-askpass SSH_ASKPASS_REQUIRE=force setsid ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $EXTRA_OPTS -p $PORT joe@localhost cat /etc/os-release)
+
+waitpid $SERVER_PID
+check_out

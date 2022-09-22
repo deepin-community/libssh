@@ -1,0 +1,36 @@
+Description: Allow the buildsystem to overwrite libssh's OUTPUT_NAME.
+Author: Sebastian Ramacher <s.ramacher@gmx.at>
+Last-Update: 2012-06-19
+
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -92,6 +92,11 @@ if (BUILD_STATIC_LIB)
+   )
+ endif (BUILD_STATIC_LIB)
+ 
++set(LIBSSH_LIBRARY_NAME
++  ssh
++  CACHE INTERNAL "libssh library name"
++)
++
+ set(libssh_SRCS
+   agent.c
+   auth.c
+@@ -345,6 +350,8 @@ set_target_properties(ssh
+         ${LIBRARY_VERSION}
+       SOVERSION
+         ${LIBRARY_SOVERSION}
++      OUTPUT_NAME
++        ${LIBSSH_LIBRARY_NAME}
+       DEFINE_SYMBOL
+         LIBSSH_EXPORTS
+ )
+@@ -397,7 +404,7 @@ if (BUILD_STATIC_LIB)
+         SOVERSION
+           ${LIBRARY_SOVERSION}
+         OUTPUT_NAME
+-          ssh
++          ${LIBSSH_LIBRARY_NAME}
+         ARCHIVE_OUTPUT_DIRECTORY
+           ${CMAKE_CURRENT_BINARY_DIR}/${OUTPUT_SUFFIX}
+   )
