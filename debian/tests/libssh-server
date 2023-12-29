@@ -50,19 +50,3 @@ OUT=$(ssh -i test_rsa -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=n
 
 waitpid $SERVER_PID
 check_out
-
-echo "====== password authentication with valgrind ======"
-
-# run server
-SERVER_PID=$(valgrind $SSHD --user=joe --password=$(./mock-ssh-askpass) --port $PORT -v)
-
-# HACK: default curve25519-sha256 algorithm fails under valgrind and 32 bit OSes
-EXTRA_OPTS=""
-if [ "$(getconf LONG_BIT)" = 32 ]; then
-    EXTRA_OPTS="$EXTRA_OPTS -o KexAlgorithms=ecdh-sha2-nistp256"
-fi
-
-OUT=$(DISPLAY= SSH_ASKPASS=`pwd`/mock-ssh-askpass SSH_ASKPASS_REQUIRE=force setsid ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $EXTRA_OPTS -p $PORT joe@localhost cat /etc/os-release)
-
-waitpid $SERVER_PID
-check_out

@@ -56,7 +56,7 @@ typedef void (*ssh_callback_int) (int code, void *user);
  * @returns number of bytes processed by the callee. The remaining bytes will
  * be sent in the next callback message, when more data is available.
  */
-typedef int (*ssh_callback_data) (const void *data, size_t len, void *user);
+typedef size_t (*ssh_callback_data) (const void *data, size_t len, void *user);
 
 typedef void (*ssh_callback_int_int) (int code, int errno_code, void *user);
 
@@ -81,9 +81,9 @@ typedef void (*ssh_log_callback) (ssh_session session, int priority,
  *
  * @param priority  Priority of the log, the smaller being the more important.
  *
- * @param function  The function name calling the the logging fucntions.
+ * @param function  The function name calling the logging functions.
  *
- * @param message   The actual message
+ * @param buffer   The actual message
  *
  * @param userdata Userdata to be passed to the callback function.
  */
@@ -117,6 +117,8 @@ typedef void (*ssh_global_request_callback) (ssh_session session,
  * sends back an X11 connection attempt. This is a client-side API
  * @param session current session handler
  * @param userdata Userdata to be passed to the callback function.
+ * @param originator_address    IP address of the machine who sent the request
+ * @param originator_port   port number of the machine who sent the request
  * @returns a valid ssh_channel handle if the request is to be allowed
  * @returns NULL if the request should not be allowed
  * @warning The channel pointer returned by this callback must be closed by the application.
@@ -221,8 +223,8 @@ typedef int (*ssh_auth_gssapi_mic_callback) (ssh_session session, const char *us
  * @param user User that wants to authenticate
  * @param pubkey public key used for authentication
  * @param signature_state SSH_PUBLICKEY_STATE_NONE if the key is not signed (simple public key probe),
- * 							SSH_PUBLICKEY_STATE_VALID if the signature is valid. Others values should be
- * 							replied with a SSH_AUTH_DENIED.
+ *							SSH_PUBLICKEY_STATE_VALID if the signature is valid. Others values should be
+ *							replied with a SSH_AUTH_DENIED.
  * @param userdata Userdata to be passed to the callback function.
  * @returns SSH_AUTH_SUCCESS Authentication is accepted.
  * @returns SSH_AUTH_PARTIAL Partial authentication, more authentication means are needed.
@@ -268,11 +270,11 @@ typedef ssh_string (*ssh_gssapi_select_oid_callback) (ssh_session session, const
 		int n_oid, ssh_string *oids, void *userdata);
 
 /*
- * @brief handle the negociation of a security context, server side.
+ * @brief handle the negotiation of a security context, server side.
  * @param session current session handler
  * @param[in] input_token input token provided by client
  * @param[out] output_token output of the gssapi accept_sec_context method,
- * 				NULL after completion.
+ *				NULL after completion.
  * @returns SSH_OK if the token was generated correctly or accept_sec_context
  * returned GSS_S_COMPLETE
  * @returns SSH_ERROR in case of error
@@ -354,6 +356,9 @@ typedef struct ssh_server_callbacks_struct *ssh_server_callbacks;
  * This functions sets the callback structure to use your own callback
  * functions for user authentication, new channels and requests.
  *
+ * Note, that the structure is not copied to the session structure so it needs
+ * to be valid for the whole session lifetime.
+ *
  * @code
  * struct ssh_server_callbacks_struct cb = {
  *   .userdata = data,
@@ -394,7 +399,7 @@ struct ssh_socket_callbacks_struct {
    */
   ssh_callback_int_int exception;
   /** This function is called when the ssh_socket_connect was used on the socket
-   * on nonblocking state, and the connection successed.
+   * on nonblocking state, and the connection succeeded.
    */
   ssh_callback_int_int connected;
 };
@@ -548,6 +553,9 @@ typedef struct ssh_packet_callbacks_struct *ssh_packet_callbacks;
  * This functions sets the callback structure to use your own callback
  * functions for auth, logging and status.
  *
+ * Note, that the callback structure is not copied into the session so it needs
+ * to be valid for the whole session lifetime.
+ *
  * @code
  * struct ssh_callbacks_struct cb = {
  *   .userdata = data,
@@ -619,6 +627,7 @@ typedef void (*ssh_channel_signal_callback) (ssh_session session,
  * @brief SSH channel exit status callback. Called when a channel has received an exit status
  * @param session Current session handler
  * @param channel the actual channel
+ * @param exit_status Exit status of the ran command
  * @param userdata Userdata to be passed to the callback function.
  */
 typedef void (*ssh_channel_exit_status_callback) (ssh_session session,
@@ -631,7 +640,7 @@ typedef void (*ssh_channel_exit_status_callback) (ssh_session session,
  * @param session Current session handler
  * @param channel the actual channel
  * @param signal the signal name (without the SIG prefix)
- * @param core a boolean telling wether a core has been dumped or not
+ * @param core a boolean telling whether a core has been dumped or not
  * @param errmsg the description of the exception
  * @param lang the language of the description (format: RFC 3066)
  * @param userdata Userdata to be passed to the callback function.
@@ -646,12 +655,13 @@ typedef void (*ssh_channel_exit_signal_callback) (ssh_session session,
 
 /**
  * @brief SSH channel PTY request from a client.
+ * @param session the session
  * @param channel the channel
  * @param term The type of terminal emulation
  * @param width width of the terminal, in characters
  * @param height height of the terminal, in characters
  * @param pxwidth width of the terminal, in pixels
- * @param pxheight height of the terminal, in pixels
+ * @param pwheight height of the terminal, in pixels
  * @param userdata Userdata to be passed to the callback function.
  * @returns 0 if the pty request is accepted
  * @returns -1 if the request is denied
@@ -665,6 +675,7 @@ typedef int (*ssh_channel_pty_request_callback) (ssh_session session,
 
 /**
  * @brief SSH channel Shell request from a client.
+ * @param session the session
  * @param channel the channel
  * @param userdata Userdata to be passed to the callback function.
  * @returns 0 if the shell request is accepted
@@ -677,6 +688,7 @@ typedef int (*ssh_channel_shell_request_callback) (ssh_session session,
  * @brief SSH auth-agent-request from the client. This request is
  * sent by a client when agent forwarding is available.
  * Server is free to ignore this callback, no answer is expected.
+ * @param session the session
  * @param channel the channel
  * @param userdata Userdata to be passed to the callback function.
  */
@@ -688,7 +700,12 @@ typedef void (*ssh_channel_auth_agent_req_callback) (ssh_session session,
  * @brief SSH X11 request from the client. This request is
  * sent by a client when X11 forwarding is requested(and available).
  * Server is free to ignore this callback, no answer is expected.
+ * @param session the session
  * @param channel the channel
+ * @param single_connection If true, only one channel should be forwarded
+ * @param auth_protocol The X11 authentication method to be used
+ * @param auth_cookie   Authentication cookie encoded hexadecimal
+ * @param screen_number Screen number
  * @param userdata Userdata to be passed to the callback function.
  */
 typedef void (*ssh_channel_x11_req_callback) (ssh_session session,
@@ -700,11 +717,12 @@ typedef void (*ssh_channel_x11_req_callback) (ssh_session session,
                                             void *userdata);
 /**
  * @brief SSH channel PTY windows change (terminal size) from a client.
+ * @param session the session
  * @param channel the channel
  * @param width width of the terminal, in characters
  * @param height height of the terminal, in characters
  * @param pxwidth width of the terminal, in pixels
- * @param pxheight height of the terminal, in pixels
+ * @param pwheight height of the terminal, in pixels
  * @param userdata Userdata to be passed to the callback function.
  * @returns 0 if the pty request is accepted
  * @returns -1 if the request is denied
@@ -717,6 +735,7 @@ typedef int (*ssh_channel_pty_window_change_callback) (ssh_session session,
 
 /**
  * @brief SSH channel Exec request from a client.
+ * @param session the session
  * @param channel the channel
  * @param command the shell command to be executed
  * @param userdata Userdata to be passed to the callback function.
@@ -730,6 +749,7 @@ typedef int (*ssh_channel_exec_request_callback) (ssh_session session,
 
 /**
  * @brief SSH channel environment request from a client.
+ * @param session the session
  * @param channel the channel
  * @param env_name name of the environment value to be set
  * @param env_value value of the environment value to be set
@@ -746,6 +766,7 @@ typedef int (*ssh_channel_env_request_callback) (ssh_session session,
                                             void *userdata);
 /**
  * @brief SSH channel subsystem request from a client.
+ * @param session the session
  * @param channel the channel
  * @param subsystem the subsystem required
  * @param userdata Userdata to be passed to the callback function.
@@ -760,6 +781,8 @@ typedef int (*ssh_channel_subsystem_request_callback) (ssh_session session,
 /**
  * @brief SSH channel write will not block (flow control).
  *
+ * @param session the session
+ *
  * @param channel the channel
  *
  * @param[in] bytes size of the remote window in bytes. Writing as much data
@@ -771,7 +794,7 @@ typedef int (*ssh_channel_subsystem_request_callback) (ssh_session session,
  */
 typedef int (*ssh_channel_write_wontblock_callback) (ssh_session session,
                                                      ssh_channel channel,
-                                                     size_t bytes,
+                                                     uint32_t bytes,
                                                      void *userdata);
 
 struct ssh_channel_callbacks_struct {
@@ -849,7 +872,11 @@ typedef struct ssh_channel_callbacks_struct *ssh_channel_callbacks;
  * @brief Set the channel callback functions.
  *
  * This functions sets the callback structure to use your own callback
- * functions for channel data and exceptions
+ * functions for channel data and exceptions.
+ *
+ * Note, that the structure is not copied to the channel structure so it needs
+ * to be valid as for the whole life of the channel or until it is removed with
+ * ssh_remove_channel_callbacks().
  *
  * @code
  * struct ssh_channel_callbacks_struct cb = {
@@ -907,7 +934,7 @@ LIBSSH_API int ssh_remove_channel_callbacks(ssh_channel channel,
 
 /** @} */
 
-/** @group libssh_threads
+/** @addtogroup libssh_threads
  * @{
  */
 
@@ -979,7 +1006,7 @@ LIBSSH_API struct ssh_threads_callbacks_struct *ssh_threads_get_noop(void);
  *
  * @param[in]  cb  The callback to set.
  *
- * @return         0 on success, < 0 on errror.
+ * @return         0 on success, < 0 on error.
  */
 LIBSSH_API int ssh_set_log_callback(ssh_logging_callback cb);
 

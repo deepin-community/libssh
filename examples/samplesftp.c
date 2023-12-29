@@ -29,10 +29,12 @@ clients must be made or how a client should react.
 #include "examples_common.h"
 #ifdef WITH_SFTP
 
+#ifndef BUF_SIZE
+#define BUF_SIZE 65536
+#endif
+
 static int verbosity;
 static char *destination;
-
-#define DATALEN 65536
 
 static void do_sftp(ssh_session session) {
     sftp_session sftp = sftp_new(session);
@@ -44,8 +46,8 @@ static void do_sftp(ssh_session session) {
     sftp_file to;
     int len = 1;
     unsigned int i;
-    char data[DATALEN] = {0};
-    char *lnk;
+    char data[BUF_SIZE] = {0};
+    char *lnk = NULL;
 
     unsigned int count;
 
@@ -84,6 +86,7 @@ static void do_sftp(ssh_session session) {
         goto end;
     }
     printf("readlink /tmp/sftp_symlink_test: %s\n", lnk);
+    ssh_string_free_char(lnk);
 
     sftp_unlink(sftp, "/tmp/sftp_symlink_test");
 
@@ -171,7 +174,7 @@ static void do_sftp(ssh_session session) {
         sftp_attributes_free(file);
     }
 
-    /* when file = NULL, an error has occured OR the directory listing is end of
+    /* when file = NULL, an error has occurred OR the directory listing is end of
      * file */
     if (!sftp_dir_eof(dir)) {
         fprintf(stderr, "Error: %s\n", ssh_get_error(session));
@@ -223,9 +226,9 @@ static void do_sftp(ssh_session session) {
     to = sftp_open(sftp, "/tmp/grosfichier", O_WRONLY|O_CREAT, 0644);
 
     for (i = 0; i < 1000; ++i) {
-        len = sftp_write(to, data, DATALEN);
+        len = sftp_write(to, data, sizeof(data));
         printf("wrote %d bytes\n", len);
-        if (len != DATALEN) {
+        if (len != sizeof(data)) {
             printf("chunk %d : %d (%s)\n", i, len, ssh_get_error(session));
         }
     }

@@ -1,5 +1,6 @@
 Description: Install the static library again
 Author: Laurent Bigonville <bigon@debian.org>
+Forwarded: not-needed
 
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt

@@ -63,6 +63,11 @@ SSH_PACKET_CALLBACK(ssh_packet_disconnect_callback){
     error = ssh_string_to_char(error_s);
     SSH_STRING_FREE(error_s);
   }
+
+  if (error != NULL) {
+    session->peer_discon_msg = strdup(error);
+  }
+
   SSH_LOG(SSH_LOG_PACKET, "Received SSH_MSG_DISCONNECT %d:%s",
                           code, error != NULL ? error : "no error");
   ssh_set_error(session, SSH_FATAL,
@@ -108,6 +113,18 @@ SSH_PACKET_CALLBACK(ssh_packet_newkeys){
                     "ssh_packet_newkeys called in wrong state : %d:%d",
                     session->session_state,session->dh_handshake_state);
       goto error;
+  }
+
+  if (session->flags & SSH_SESSION_FLAG_KEX_STRICT) {
+      /* reset packet sequence number when running in strict kex mode */
+      session->recv_seq = 0;
+      /* Check that we aren't tainted */
+      if (session->flags & SSH_SESSION_FLAG_KEX_TAINTED) {
+          ssh_set_error(session,
+                        SSH_FATAL,
+                        "Received unexpected packets in strict KEX mode.");
+          goto error;
+      }
   }
 
   if(session->server){
@@ -156,11 +173,14 @@ SSH_PACKET_CALLBACK(ssh_packet_newkeys){
                                   session->next_crypto->digest_len);
     SSH_SIGNATURE_FREE(sig);
     if (rc == SSH_ERROR) {
+      ssh_set_error(session,
+                    SSH_FATAL,
+                    "Failed to verify server hostkey signature");
       goto error;
     }
     SSH_LOG(SSH_LOG_PROTOCOL,"Signature verified and valid");
 
-    /* When receiving this packet, we switch on the incomming crypto. */
+    /* When receiving this packet, we switch on the incoming crypto. */
     rc = ssh_packet_set_newkeys(session, SSH_DIRECTION_IN);
     if (rc != SSH_OK) {
         goto error;
@@ -244,6 +264,8 @@ SSH_PACKET_CALLBACK(ssh_packet_ext_info)
             if (ssh_match_group(value, "rsa-sha2-256")) {
                 session->extensions |= SSH_EXT_SIG_RSA_SHA256;
             }
+        } else {
+            SSH_LOG(SSH_LOG_PACKET, "Unknown extension: %s", name);
         }
         free(name);
         free(value);

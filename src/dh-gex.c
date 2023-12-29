@@ -37,7 +37,7 @@
 #include "libssh/buffer.h"
 #include "libssh/session.h"
 
-/* Minimum, recommanded and maximum size of DH group */
+/* Minimum, recommended and maximum size of DH group */
 #define DH_PMIN 2048
 #define DH_PREQ 2048
 #define DH_PMAX 8192
@@ -108,7 +108,11 @@ SSH_PACKET_CALLBACK(ssh_packet_client_dhgex_group)
     bignum pmin1 = NULL, one = NULL;
     bignum_CTX ctx = bignum_ctx_new();
     bignum modulus = NULL, generator = NULL;
+#if !defined(HAVE_LIBCRYPTO) || OPENSSL_VERSION_NUMBER < 0x30000000L
     const_bignum pubkey;
+#else
+    bignum pubkey = NULL;
+#endif /* OPENSSL_VERSION_NUMBER */
     (void) type;
     (void) user;
 
@@ -212,6 +216,9 @@ SSH_PACKET_CALLBACK(ssh_packet_client_dhgex_group)
     if (rc != SSH_OK) {
         goto error;
     }
+#if defined(HAVE_LIBCRYPTO) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+    bignum_safe_free(pubkey);
+#endif /* OPENSSL_VERSION_NUMBER */
 
     session->dh_handshake_state = DH_STATE_INIT_SENT;
 
@@ -229,6 +236,9 @@ error:
     bignum_safe_free(generator);
     bignum_safe_free(one);
     bignum_safe_free(pmin1);
+#if defined(HAVE_LIBCRYPTO) && OPENSSL_VERSION_NUMBER >= 0x30000000L
+    bignum_safe_free(pubkey);
+#endif /* OPENSSL_VERSION_NUMBER */
     if(!bignum_ctx_invalid(ctx)) {
         bignum_ctx_free(ctx);
     }
@@ -236,6 +246,11 @@ error:
     session->session_state = SSH_SESSION_STATE_ERROR;
 
     return SSH_PACKET_USED;
+}
+
+void ssh_client_dhgex_remove_callbacks(ssh_session session)
+{
+    ssh_packet_remove_callbacks(session, &ssh_dhgex_client_callbacks);
 }
 
 static SSH_PACKET_CALLBACK(ssh_packet_client_dhgex_reply)
@@ -248,7 +263,7 @@ static SSH_PACKET_CALLBACK(ssh_packet_client_dhgex_reply)
     (void)user;
     SSH_LOG(SSH_LOG_PROTOCOL, "SSH_MSG_KEX_DH_GEX_REPLY received");
 
-    ssh_packet_remove_callbacks(session, &ssh_dhgex_client_callbacks);
+    ssh_client_dhgex_remove_callbacks(session);
     rc = ssh_buffer_unpack(packet,
                            "SBS",
                            &pubkey_blob, &server_pubkey,
@@ -282,15 +297,10 @@ static SSH_PACKET_CALLBACK(ssh_packet_client_dhgex_reply)
     }
 
     /* Send the MSG_NEWKEYS */
-    if (ssh_buffer_add_u8(session->out_buffer, SSH2_MSG_NEWKEYS) < 0) {
-        goto error;
-    }
-
-    rc = ssh_packet_send(session);
+    rc = ssh_packet_send_newkeys(session);
     if (rc == SSH_ERROR) {
         goto error;
     }
-    SSH_LOG(SSH_LOG_PROTOCOL, "SSH_MSG_NEWKEYS sent");
     session->dh_handshake_state = DH_STATE_NEWKEYS_SENT;
 
     return SSH_PACKET_USED;
@@ -367,9 +377,9 @@ static bool dhgroup_better_size(uint32_t pmin,
  * @brief returns 1 with 1/n probability
  * @returns 1 on with P(1/n), 0 with P(n-1/n).
  */
-static bool invn_chance(int n)
+static bool invn_chance(size_t n)
 {
-    uint32_t nounce = 0;
+    size_t nounce = 0;
     int ok;
 
     ok = ssh_get_random(&nounce, sizeof(nounce), 0);
@@ -489,7 +499,8 @@ static int ssh_retrieve_dhgroup_file(FILE *moduli,
  * @param[out] g generator
  * @return SSH_OK on success, SSH_ERROR otherwise.
  */
-static int ssh_retrieve_dhgroup(uint32_t pmin,
+static int ssh_retrieve_dhgroup(char *moduli_file,
+                                uint32_t pmin,
                                 uint32_t pn,
                                 uint32_t pmax,
                                 size_t *size,
@@ -508,12 +519,17 @@ static int ssh_retrieve_dhgroup(uint32_t pmin,
         return ssh_fallback_group(pmax, p, g);
     }
 
-    moduli = fopen(MODULI_FILE, "r");
+    if (moduli_file != NULL)
+        moduli = fopen(moduli_file, "r");
+    else
+        moduli = fopen(MODULI_FILE, "r");
+
     if (moduli == NULL) {
+        char err_msg[SSH_ERRNO_MSG_MAX] = {0};
         SSH_LOG(SSH_LOG_WARNING,
                 "Unable to open moduli file: %s",
-                strerror(errno));
-        return ssh_fallback_group(pmax, p, g);
+                ssh_strerror(errno, err_msg, SSH_ERRNO_MSG_MAX));
+                return ssh_fallback_group(pmax, p, g);
     }
 
     *size = 0;
@@ -627,7 +643,8 @@ static SSH_PACKET_CALLBACK(ssh_packet_server_dhgex_request)
             pn = pmin;
         }
     }
-    rc = ssh_retrieve_dhgroup(pmin,
+    rc = ssh_retrieve_dhgroup(session->opts.moduli_file,
+                              pmin,
                               pn,
                               pmax,
                               &size,

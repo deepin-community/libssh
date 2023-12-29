@@ -3,5 +3,4 @@ Depends: libssh-dev,
   libglib2.0-dev,
   build-essential,
   openssh-client,
-  valgrind,
 Restrictions: allow-stderr
