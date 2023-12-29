@@ -27,6 +27,9 @@ clients must be made or how a client should react.
 #ifdef HAVE_ARGP_H
 #include <argp.h>
 #endif
+#ifndef _WIN32
+#include <netinet/in.h>
+#endif
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <stdbool.h>
@@ -34,6 +37,10 @@ clients must be made or how a client should react.
 #include <string.h>
 #include <stdio.h>
 #include <poll.h>
+
+#ifndef BUF_SIZE
+#define BUF_SIZE 16384
+#endif
 
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); x=NULL;} } while(0)
 
@@ -88,7 +95,7 @@ cleanup_push(struct cleanup_node_struct** head_ref,
     // Allocate memory for node
     struct cleanup_node_struct *new_node = malloc(sizeof *new_node);
 
-    if (head_ref != NULL) {
+    if (*head_ref != NULL) {
         new_node->next = *head_ref;
     } else {
         new_node->next = NULL;
@@ -193,7 +200,7 @@ subsystem_request(UNUSED_PARAM(ssh_session session),
                   UNUSED_PARAM(void *userdata))
 {
     _ssh_log(SSH_LOG_PROTOCOL,
-             "=== subsystem_request", "Channel subsystem reqeuest: %s",
+             "=== subsystem_request", "Channel subsystem request: %s",
              subsystem);
     return 0;
 }
@@ -289,7 +296,7 @@ my_channel_eof_function(ssh_session session,
 
     _ssh_log(SSH_LOG_PROTOCOL,
              "=== my_channel_eof_function",
-             "Got EOF on channel. Shuting down write on socket (fd = %d).",
+             "Got EOF on channel. Shutting down write on socket (fd = %d).",
              *event_fd_data->p_fd);
 
     stack_socket_close(session, event_fd_data);
@@ -353,7 +360,7 @@ my_fd_data_function(UNUSED_PARAM(socket_t fd),
     ssh_channel channel = event_fd_data->channel;
     ssh_session session;
     int len, i, wr;
-    char buf[16384];
+    char buf[BUF_SIZE];
     int blocking;
 
     if (channel == NULL) {
@@ -418,7 +425,7 @@ my_fd_data_function(UNUSED_PARAM(socket_t fd),
                     break;
                 }
                 wr += i;
-                _ssh_log(SSH_LOG_FUNCTIONS, "=== my_fd_data_function", "channel_write (%d from %d)", wr, len);
+                _ssh_log(SSH_LOG_FUNCTIONS, "=== my_fd_data_function", "ssh_channel_write (%d from %d)", wr, len);
             } while (i > 0 && wr < len);
         }
         else {
@@ -522,6 +529,7 @@ message_callback(UNUSED_PARAM(ssh_session session),
                     SAFE_FREE(pFd);
                     SAFE_FREE(cb_chan);
                     SAFE_FREE(event_fd_data);
+                    close(socket_fd);
                     return 1;
                 }
 

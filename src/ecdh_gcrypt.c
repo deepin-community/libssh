@@ -295,7 +295,7 @@ SSH_PACKET_CALLBACK(ssh_packet_server_ecdh_init){
     }
     session->next_crypto->ecdh_client_pubkey = q_c_string;
 
-    /* Build server's keypair */
+    /* Build server's key pair */
     err = gcry_sexp_build(&param, NULL, "(genkey(ecdh(curve %s) (flags transient-key)))",
                           curve);
     if (err) {
@@ -372,16 +372,12 @@ SSH_PACKET_CALLBACK(ssh_packet_server_ecdh_init){
         goto out;
     }
 
-
+    session->dh_handshake_state = DH_STATE_NEWKEYS_SENT;
     /* Send the MSG_NEWKEYS */
-    rc = ssh_buffer_add_u8(session->out_buffer, SSH2_MSG_NEWKEYS);
-    if (rc != SSH_OK) {
+    rc = ssh_packet_send_newkeys(session);
+    if (rc == SSH_ERROR) {
         goto out;
     }
-
-    session->dh_handshake_state = DH_STATE_NEWKEYS_SENT;
-    rc = ssh_packet_send(session);
-    SSH_LOG(SSH_LOG_PROTOCOL, "SSH_MSG_NEWKEYS sent");
 
  out:
     gcry_sexp_release(param);

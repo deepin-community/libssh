@@ -2,10 +2,13 @@ Description: Disable torture_path_expand_tilde_unix, its not working well on bui
  On buildd, the HOME is set to a non-existing directory, this makes
  torture_path_expand_tilde_unix fail
 Author: Laurent Bigonville <bigon@debian.org>
+Forwarded: not-needed
 
---- a/tests/unittests/torture_misc.c
-+++ b/tests/unittests/torture_misc.c
-@@ -662,11 +662,11 @@ int torture_run_tests(void) {
+Index: libssh/tests/unittests/torture_misc.c
+===================================================================
+--- libssh.orig/tests/unittests/torture_misc.c
++++ libssh/tests/unittests/torture_misc.c
+@@ -767,11 +767,11 @@ int torture_run_tests(void) {
          cmocka_unit_test(torture_basename),
          cmocka_unit_test(torture_dirname),
          cmocka_unit_test(torture_ntohll),
@@ -22,3 +25,16 @@ Author: Laurent Bigonville <bigon@debian.org>
          cmocka_unit_test_setup_teardown(torture_path_expand_escape, setup, teardown),
          cmocka_unit_test_setup_teardown(torture_path_expand_known_hosts, setup, teardown),
          cmocka_unit_test_setup_teardown(torture_path_expand_percent, setup, teardown),
+Index: libssh/tests/unittests/torture_config.c
+===================================================================
+--- libssh.orig/tests/unittests/torture_config.c
++++ libssh/tests/unittests/torture_config.c
+@@ -1769,7 +1769,7 @@ static void torture_config_make_absolute
+     assert_string_equal(result, "/tmp/ssh/my_config");
+     free(result);
+ 
+-#ifndef _WIN32
++#if 0
+     /* Tilde expansion works only in user config */
+     result = ssh_config_make_absolute(session, "~/.ssh/config.d/*.conf", 0);
+     snprintf(h, 256 - 1, "%s/.ssh/config.d/*.conf", home);

@@ -30,6 +30,12 @@ set(LIBSSH_THREAD_UNIT_TESTS
     torture_threads_crypto
 )
 
+set(TORTURE_UNIT_ENVIRONMENT
+    "LSAN_OPTIONS=suppressions=${libssh-tests_SOURCE_DIR}/suppressions/lsan.supp;")
+if (OPENSSL_FOUND)
+    list(APPEND TORTURE_UNIT_ENVIRONMENT OPENSSL_ENABLE_SHA1_SIGNATURES=1)
+endif (OPENSSL_FOUND)
+
 if (UNIX AND NOT WIN32)
     set(LIBSSH_UNIT_TESTS
         ${LIBSSH_UNIT_TESTS}
@@ -64,6 +70,14 @@ if (UNIX AND NOT WIN32)
         )
     endif()
 
+    if (WITH_PKCS11_URI)
+        set(LIBSSH_UNIT_TESTS
+            ${LIBSSH_UNIT_TESTS}
+            torture_pki_rsa_uri
+            torture_pki_ecdsa_uri
+        )
+    endif()
+
     if (HAVE_ECC)
         set(LIBSSH_UNIT_TESTS
             ${LIBSSH_UNIT_TESTS}
@@ -76,10 +90,15 @@ if (UNIX AND NOT WIN32)
         # requires pthread
         torture_threads_pki_rsa
     )
-    # Not working correctly
-    #if (WITH_SERVER)
-    #    add_cmocka_test(torture_server_x11 torture_server_x11.c ${TEST_TARGET_LIBRARIES})
-    #endif (WITH_SERVER)
+    if (WITH_SERVER)
+        # Not working correctly
+        # add_cmocka_test(torture_server_x11 torture_server_x11.c ${TEST_TARGET_LIBRARIES})
+        # the signals are not testable under cmocka
+        # set(LIBSSH_THREAD_UNIT_TESTS
+        #     ${LIBSSH_THREAD_UNIT_TESTS}
+        #     torture_unit_server
+        # )
+    endif (WITH_SERVER)
 endif (UNIX AND NOT WIN32)
 
 foreach(_UNIT_TEST ${LIBSSH_UNIT_TESTS})
@@ -88,6 +107,10 @@ foreach(_UNIT_TEST ${LIBSSH_UNIT_TESTS})
                     COMPILE_OPTIONS ${DEFAULT_C_COMPILE_FLAGS}
                     LINK_LIBRARIES ${TEST_TARGET_LIBRARIES}
     )
+
+    set_property(TEST ${_UNIT_TEST}
+                 PROPERTY
+                     ENVIRONMENT ${TORTURE_UNIT_ENVIRONMENT})
 endforeach()
 
 if (CMAKE_USE_PTHREADS_INIT)
@@ -97,6 +120,10 @@ if (CMAKE_USE_PTHREADS_INIT)
                         COMPILE_OPTIONS ${DEFAULT_C_COMPILE_FLAGS}
                         LINK_LIBRARIES ${TEST_TARGET_LIBRARIES} Threads::Threads
         )
+
+    set_property(TEST ${_UNIT_TEST}
+                 PROPERTY
+                    ENVIRONMENT ${TORTURE_UNIT_ENVIRONMENT})
     endforeach()
 endif ()
 

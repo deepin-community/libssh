@@ -49,7 +49,7 @@
  *                            code.
  *
  * @param[out] pkey     A pointer where the allocated key can be stored. You
- *                      need to free the memory.
+ *                      need to free the memory using ssh_key_free().
  *
  * @return              SSH_OK on success, SSH_ERROR on error.
  *
@@ -630,7 +630,11 @@ ssh_string ssh_pki_openssh_privkey_export(const ssh_key privkey,
             goto error;
         }
 
-        ssh_buffer_pack(kdf_buf, "Sd", salt, rounds);
+        rc = ssh_buffer_pack(kdf_buf, "Sd", salt, rounds);
+        if (rc != SSH_OK) {
+            SSH_BUFFER_FREE(kdf_buf);
+            goto error;
+        }
         kdf_options = ssh_string_new(ssh_buffer_get_len(kdf_buf));
         if (kdf_options == NULL){
             SSH_BUFFER_FREE(kdf_buf);

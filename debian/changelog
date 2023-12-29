@@ -1,3 +1,101 @@
+libssh (0.10.6-2) unstable; urgency=medium
+
+  * Fix regression in IPv6 addresses in hostname parsing.
+    Patch and unit test backported from upstream stable-0.10 branch.
+    See https://gitlab.com/libssh/libssh-mirror/-/issues/227
+
+ -- Martin Pitt <mpitt@debian.org>  Fri, 22 Dec 2023 16:29:47 +0100
+
+libssh (0.10.6-1) unstable; urgency=high
+
+  * New upstream security release (thus high urgency):
+    - Fix Command injection using ProxyCommand
+      (CVE-2023-6004, Closes: #1059061)
+    - Fix missing checks for return values of MD functions
+      (CVE-2023-6918, Closes: #1059059)
+    - Fix potential downgrade attack using strict kex
+      (CVE-2023-48795, Closes: #1059004)
+
+ -- Martin Pitt <mpitt@debian.org>  Fri, 22 Dec 2023 09:46:12 +0100
+
+libssh (0.10.5-3) unstable; urgency=medium
+
+  * Bump debhelper compat level to 13.
+  * Remove compile_commands.json during package cleaning. Fixes "Fails to
+    build source after successful build". (Closes: #1045639)
+
+ -- Martin Pitt <mpitt@debian.org>  Fri, 18 Aug 2023 17:01:59 +0200
+
+libssh (0.10.5-2) unstable; urgency=medium
+
+  * Revert "Bump debhelper from old 12 to 13."
+    This is not appropriate at this point of the release cycle any more.
+
+ -- Martin Pitt <mpitt@debian.org>  Wed, 17 May 2023 19:56:56 +0000
+
+libssh (0.10.5-1) unstable; urgency=high
+
+  [ Martin Pitt ]
+  * New upstream security release (thus high urgency):
+    - Fix authenticated remote DoS through potential NULL dereference during rekeying
+      with algorithm guessing (CVE-2023-1667)
+      https://www.libssh.org/security/advisories/CVE-2023-1667.txt
+    - Client authentication bypass in pki_verify_data_signature() in low-memory
+      conditions with OpenSSL backend; gcrypt backend is not affected
+      https://www.libssh.org/security/advisories/CVE-2023-2283.txt
+      (CVE-2023-2283, Closes: #1035832)
+  * Bump Standards-Version to 4.6.2. No changes necessary.
+  * Drop debian/source/lintian-overrides. It now causes a "mismatched-override"
+    warning, and apparently is not necessary any more.
+  * debian/copyright: Drop files which don't exist any more.
+    Spotted by lintian's "superfluous-file-pattern" warnings.
+
+  [ Debian Janitor ]
+  * Bump debhelper from old 12 to 13.
+  * Avoid explicitly specifying -Wl,--as-needed linker flag.
+
+ -- Martin Pitt <mpitt@debian.org>  Wed, 10 May 2023 08:00:26 +0200
+
+libssh (0.10.4-2) unstable; urgency=medium
+
+  * autopkgtest: Drop valgrind run. This hasn't worked for years on many
+    architectures, is also acting up on s390x, and does not belong into a
+    downstream integration test.
+
+ -- Martin Pitt <mpitt@debian.org>  Mon, 19 Sep 2022 10:41:22 +0200
+
+libssh (0.10.4-1) unstable; urgency=medium
+
+  * New upstream release (Closes: #1019260)
+  * Disable new tilde expansion test. This does not work in our buildd
+    environment for the same reason as the two in torture_misc. Update
+    debian/patches/2003-disable-expand_tilde_unix-test.patch accordingly.
+  * debian/*.symbols: Add newly exported symbols
+  * Bump Standards-Version to 4.6.1. No changes needed.
+
+ -- Martin Pitt <mpitt@debian.org>  Wed, 14 Sep 2022 08:13:19 +0200
+
+libssh (0.9.6-2) unstable; urgency=medium
+
+  [ Helmut Grohne ]
+  * debian/control: Add preferred real zlib1g-dev build dep.
+    As libz-dev is purely virtual.
+  * Mark build dependencies for running unit tests.
+    This reduces dependencies for bootstrapping. (Closes: #1002598)
+
+  [ Martin Pitt ]
+  * debian/copyright: Update and generalize. Replace some over-specific
+    patterns with globs. A lot of files did not exist any more, a lot of new
+    copyrights were missing.  Spotted by lintian.
+  * Adjust lintian overrides to renamed tag.
+  * Quiesce very-long-line-length-in-source-file lintian warning for test keys
+  * Mark Debian specific patches as not needing upstream forwarding.
+    This quiesces two lintian complaints for `patch-not-forwarded-upstream`.
+    Don't mark 1003-custom-lib-names.patch, as that one actually is suitable
+    for upstream.
+
+ -- Martin Pitt <mpitt@debian.org>  Sat, 25 Dec 2021 19:36:01 +0100
+
 libssh (0.9.6-1) unstable; urgency=medium
 
   * New upstream version 0.9.6:
