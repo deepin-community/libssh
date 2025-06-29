@@ -3,19 +3,18 @@ Section: libs
 Priority: optional
 Maintainer: Laurent Bigonville <bigon@debian.org>
 Uploaders: Mike Gabriel <sunweaver@debian.org>, Martin Pitt <mpitt@debian.org>
-Build-Depends: cmake (>= 2.8.5),
+Build-Depends: cmake,
                debhelper-compat (= 13),
                libcmocka-dev <!nocheck>,
-               libgcrypt-dev,
                libkrb5-dev | heimdal-dev,
                libssl-dev,
                zlib1g-dev | libz-dev,
                openssh-client <!nocheck>,
                openssh-server <!nocheck>,
-               pkg-config,
+               pkgconf,
                python3:any <!nocheck>,
 Build-Depends-Indep: doxygen <!nodoc>, graphviz <!nodoc>
-Standards-Version: 4.6.2
+Standards-Version: 4.7.2
 Rules-Requires-Root: no
 Vcs-Git: https://salsa.debian.org/debian/libssh.git
 Vcs-Browser: https://salsa.debian.org/debian/libssh
@@ -24,9 +23,6 @@ Homepage: https://www.libssh.org/
 Package: libssh-4
 Architecture: any
 Depends: ${misc:Depends}, ${shlibs:Depends}
-Breaks: remmina (<< 1.2.31.2+dfsg-1+),
-        remmina-plugin-nx (<< 1.2.31.2+dfsg-1+),
-        x2goclient (<< 4.1.2.1-1+)
 Pre-Depends: ${misc:Pre-Depends}
 Multi-Arch: same
 Description: tiny C SSH library (OpenSSL flavor)
@@ -37,21 +33,6 @@ Description: tiny C SSH library (OpenSSL flavor)
  With its SFTP implementation, you can play with remote files easily.
  .
  This package contains shared libraries linked against OpenSSL.
-
-Package: libssh-gcrypt-4
-Architecture: any
-Depends: ${misc:Depends}, ${shlibs:Depends}
-Pre-Depends: ${misc:Pre-Depends}
-Multi-Arch: same
-Built-Using: ${Built-Using}
-Description: tiny C SSH library (gcrypt flavor)
- The ssh library was designed to be used by programmers needing a working SSH
- implementation by the mean of a library. The complete control of the client
- is made by the programmer. With libssh, you can remotely execute programs,
- transfer files, use a secure and transparent tunnel for your remote programs.
- With its SFTP implementation, you can play with remote files easily.
- .
- This package contains shared libraries linked against gcrypt.
 
 Package: libssh-dev
 Section: libdevel
@@ -71,25 +52,6 @@ Description: tiny C SSH library - Development files (OpenSSL flavor)
  With its SFTP implementation, you can play with remote files easily.
  .
  This package contains development files to build the OpenSSL flavor.
-
-Package: libssh-gcrypt-dev
-Section: libdevel
-Architecture: any
-Depends: libgcrypt-dev,
-         libssh-gcrypt-4 (= ${binary:Version}),
-         zlib1g-dev,
-         ${misc:Depends}
-Suggests: libssh-doc
-Conflicts: libssh-dev
-Multi-Arch: same
-Description: tiny C SSH library - Development files (gcrypt flavor)
- The ssh library was designed to be used by programmers needing a working SSH
- implementation by the mean of a library. The complete control of the client
- is made by the programmer. With libssh, you can remotely execute programs,
- transfer files, use a secure and transparent tunnel for your remote programs.
- With its SFTP implementation, you can play with remote files easily.
- .
- This package contains development files to build the gcrypt flavor.
 
 Package: libssh-doc
 Section: doc

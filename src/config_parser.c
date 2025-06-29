@@ -39,8 +39,8 @@
  */
 char *ssh_config_get_cmd(char **str)
 {
-    register char *c;
-    char *r;
+    register char *c = NULL;
+    char *r = NULL;
 
     /* Ignore leading spaces */
     for (c = *str; *c; c++) {
@@ -67,7 +67,7 @@ out:
  */
 char *ssh_config_get_token(char **str)
 {
-    register char *c;
+    register char *c = NULL;
     bool had_equal = false;
     char *r = NULL;
 
@@ -82,6 +82,13 @@ char *ssh_config_get_token(char **str)
     if (*c == '\"') {
         for (r = ++c; *c; c++) {
             if (*c == '\"' || *c == '\n') {
+                if (*c == '\"' && r != c && *(c - 1) == '\\') {
+                    /* Escaped quote: Move the remaining one char left */
+                    int remaining_len = strlen(c);
+                    memmove(c - 1, c, remaining_len);
+                    c[remaining_len - 1] = '\0';
+                    continue;
+                }
                 *c = '\0';
                 c++;
                 break;
@@ -116,7 +123,7 @@ out:
 
 long ssh_config_get_long(char **str, long notfound)
 {
-    char *p, *endp;
+    char *p = NULL, *endp = NULL;
     long i;
 
     p = ssh_config_get_token(str);
@@ -133,7 +140,7 @@ long ssh_config_get_long(char **str, long notfound)
 
 const char *ssh_config_get_str_tok(char **str, const char *def)
 {
-    char *p;
+    char *p = NULL;
 
     p = ssh_config_get_token(str);
     if (p && *p) {
@@ -145,7 +152,7 @@ const char *ssh_config_get_str_tok(char **str, const char *def)
 
 int ssh_config_get_yesno(char **str, int notfound)
 {
-    const char *p;
+    const char *p = NULL;
 
     p = ssh_config_get_str_tok(str, NULL);
     if (p == NULL) {
@@ -162,9 +169,10 @@ int ssh_config_get_yesno(char **str, int notfound)
 }
 
 int ssh_config_parse_uri(const char *tok,
-        char **username,
-        char **hostname,
-        char **port)
+                         char **username,
+                         char **hostname,
+                         char **port,
+                         bool ignore_port)
 {
     char *endp = NULL;
     long port_n;
@@ -193,6 +201,10 @@ int ssh_config_parse_uri(const char *tok,
             if (*username == NULL) {
                 goto error;
             }
+            rc = ssh_check_username_syntax(*username);
+            if (rc != SSH_OK) {
+                goto error;
+            }
         }
         tok = endp + 1;
         /* If there is second @ character, this does not look like our URI */
@@ -210,12 +222,17 @@ int ssh_config_parse_uri(const char *tok,
         if (endp == NULL) {
             goto error;
         }
-    } else {
-        /* Hostnames or aliases expand to the last colon or to the end */
+    } else if (!ignore_port) {
+        /* Hostnames or aliases expand to the last colon (if port is requested)
+         * or to the end */
         endp = strrchr(tok, ':');
         if (endp == NULL) {
             endp = strchr(tok, '\0');
         }
+    } else {
+        /* If no port is requested, expand to the end of line
+         * (to accommodate the IPv6 addresses) */
+        endp = strchr(tok, '\0');
     }
     if (tok == endp) {
         /* Zero-length hostnames are not valid */
@@ -247,7 +264,7 @@ int ssh_config_parse_uri(const char *tok,
         /* Verify the port is valid positive number */
         port_n = strtol(endp + 1, &port_end, 10);
         if (port_n < 1 || *port_end != '\0') {
-            SSH_LOG(SSH_LOG_WARN, "Failed to parse port number."
+            SSH_LOG(SSH_LOG_TRACE, "Failed to parse port number."
                     " The value '%ld' is invalid or there are some"
                     " trailing characters: '%s'", port_n, port_end);
             goto error;

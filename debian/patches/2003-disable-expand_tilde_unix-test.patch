@@ -3,12 +3,11 @@ Description: Disable torture_path_expand_tilde_unix, its not working well on bui
  torture_path_expand_tilde_unix fail
 Author: Laurent Bigonville <bigon@debian.org>
 Forwarded: not-needed
+Last-Update: 2024-09-02
 
-Index: libssh/tests/unittests/torture_misc.c
-===================================================================
---- libssh.orig/tests/unittests/torture_misc.c
-+++ libssh/tests/unittests/torture_misc.c
-@@ -767,11 +767,11 @@ int torture_run_tests(void) {
+--- a/tests/unittests/torture_misc.c
++++ b/tests/unittests/torture_misc.c
+@@ -1136,11 +1136,11 @@ int torture_run_tests(void) {
          cmocka_unit_test(torture_basename),
          cmocka_unit_test(torture_dirname),
          cmocka_unit_test(torture_ntohll),
@@ -25,14 +24,21 @@ Index: libssh/tests/unittests/torture_misc.c
          cmocka_unit_test_setup_teardown(torture_path_expand_escape, setup, teardown),
          cmocka_unit_test_setup_teardown(torture_path_expand_known_hosts, setup, teardown),
          cmocka_unit_test_setup_teardown(torture_path_expand_percent, setup, teardown),
-Index: libssh/tests/unittests/torture_config.c
-===================================================================
---- libssh.orig/tests/unittests/torture_config.c
-+++ libssh/tests/unittests/torture_config.c
-@@ -1769,7 +1769,7 @@ static void torture_config_make_absolute
+--- a/tests/unittests/torture_config.c
++++ b/tests/unittests/torture_config.c
+@@ -2391,7 +2391,7 @@ static void torture_config_make_absolute_int(void **state, bool no_sshdir_fails)
+ {
+     ssh_session session = *state;
+     char *result = NULL;
+-#ifndef _WIN32
++#if 0
+     char h[256] = {0};
+     char *user = NULL;
+     char *home = NULL;
+@@ -2506,7 +2506,7 @@ static void torture_config_make_absolute
      assert_string_equal(result, "/tmp/ssh/my_config");
      free(result);
- 
+
 -#ifndef _WIN32
 +#if 0
      /* Tilde expansion works only in user config */
