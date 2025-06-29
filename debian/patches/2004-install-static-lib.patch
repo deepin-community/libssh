@@ -1,13 +1,14 @@
 Description: Install the static library again
 Author: Laurent Bigonville <bigon@debian.org>
 Forwarded: not-needed
+Last-Update: 2024-09-02
 
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -419,6 +419,13 @@ if (BUILD_STATIC_LIB)
-   if (WIN32)
-     target_compile_definitions(ssh-static PUBLIC "LIBSSH_STATIC")
-   endif (WIN32)
+@@ -432,6 +432,13 @@ if (BUILD_STATIC_LIB)
+     if (WITH_COVERAGE)
+         append_coverage_compiler_flags_to_target(ssh-static)
+     endif (WITH_COVERAGE)
 +
 +  install(TARGETS
 +            ssh-static

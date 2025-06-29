@@ -27,12 +27,12 @@
 #ifndef _WIN32
 /* This is needed for a standard getpwuid_r on opensolaris */
 #define _POSIX_PTHREAD_SEMANTICS
-#include <pwd.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/if.h>
+#include <netinet/in.h>
+#include <pwd.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #endif /* _WIN32 */
 
@@ -73,7 +73,7 @@
 #include "libssh/session.h"
 
 #ifdef HAVE_LIBGCRYPT
-#define GCRYPT_STRING "/gnutls"
+#define GCRYPT_STRING "/gcrypt"
 #else
 #define GCRYPT_STRING ""
 #endif
@@ -181,19 +181,25 @@ int ssh_gettimeofday(struct timeval *__p, void *__t)
 char *ssh_get_local_username(void)
 {
     DWORD size = 0;
-    char *user;
+    char *user = NULL;
+    int rc;
 
     /* get the size */
     GetUserName(NULL, &size);
 
-    user = (char *) malloc(size);
+    user = (char *)malloc(size);
     if (user == NULL) {
         return NULL;
     }
 
     if (GetUserName(user, &size)) {
-        return user;
+        rc = ssh_check_username_syntax(user);
+        if (rc == SSH_OK) {
+            return user;
+        }
     }
+
+    free(user);
 
     return NULL;
 }
@@ -327,7 +333,7 @@ char *ssh_get_local_username(void)
     struct passwd pwd;
     struct passwd *pwdbuf = NULL;
     char buf[NSS_BUFLEN_PASSWD];
-    char *name;
+    char *name = NULL;
     int rc;
 
     rc = getpwuid_r(getuid(), &pwd, buf, NSS_BUFLEN_PASSWD, &pwdbuf);
@@ -336,8 +342,10 @@ char *ssh_get_local_username(void)
     }
 
     name = strdup(pwd.pw_name);
+    rc = ssh_check_username_syntax(name);
 
-    if (name == NULL) {
+    if (rc != SSH_OK) {
+        free(name);
         return NULL;
     }
 
@@ -393,7 +401,7 @@ int ssh_is_ipaddr(const char *str)
 
 char *ssh_lowercase(const char* str)
 {
-  char *new, *p;
+  char *new = NULL, *p = NULL;
 
   if (str == NULL) {
     return NULL;
@@ -447,7 +455,7 @@ char *ssh_hostport(const char *host, int port)
 char *ssh_get_hexa(const unsigned char *what, size_t len)
 {
     const char h[] = "0123456789abcdef";
-    char *hexa;
+    char *hexa = NULL;
     size_t i;
     size_t hlen = len * 3;
 
@@ -668,7 +676,7 @@ void ssh_log_hexdump(const char *descr, const unsigned char *what, size_t len)
     return;
 
 error:
-    SSH_LOG(SSH_LOG_WARN, "Could not print to buffer");
+    SSH_LOG(SSH_LOG_DEBUG, "Could not print to buffer");
     return;
 }
 
@@ -708,15 +716,16 @@ const char *ssh_version(int req_version)
 struct ssh_list *ssh_list_new(void)
 {
     struct ssh_list *ret = malloc(sizeof(struct ssh_list));
-    if (!ret)
+    if (ret == NULL) {
         return NULL;
+    }
     ret->root = ret->end = NULL;
     return ret;
 }
 
 void ssh_list_free(struct ssh_list *list)
 {
-    struct ssh_iterator *ptr, *next;
+    struct ssh_iterator *ptr = NULL, *next = NULL;
     if (!list)
         return;
     ptr = list->root;
@@ -737,7 +746,7 @@ struct ssh_iterator *ssh_list_get_iterator(const struct ssh_list *list)
 
 struct ssh_iterator *ssh_list_find(const struct ssh_list *list, void *value)
 {
-    struct ssh_iterator *it;
+    struct ssh_iterator *it = NULL;
 
     for (it = ssh_list_get_iterator(list); it != NULL ; it = it->next)
         if (it->data == value)
@@ -768,8 +777,9 @@ static struct ssh_iterator *ssh_iterator_new(const void *data)
 {
     struct ssh_iterator *iterator = malloc(sizeof(struct ssh_iterator));
 
-    if (!iterator)
+    if (iterator == NULL) {
         return NULL;
+    }
     iterator->next = NULL;
     iterator->data = data;
     return iterator;
@@ -826,7 +836,7 @@ int ssh_list_prepend(struct ssh_list *list, const void *data)
 
 void ssh_list_remove(struct ssh_list *list, struct ssh_iterator *iterator)
 {
-  struct ssh_iterator *ptr, *prev;
+  struct ssh_iterator *ptr = NULL, *prev = NULL;
 
   if (list == NULL) {
       return;
@@ -967,7 +977,7 @@ char *ssh_dirname (const char *path)
 char *ssh_basename (const char *path)
 {
   char *new = NULL;
-  const char *s;
+  const char *s = NULL;
   size_t len;
 
   if (path == NULL || *path == '\0') {
@@ -1105,8 +1115,8 @@ int ssh_mkdirs(const char *pathname, mode_t mode)
  */
 char *ssh_path_expand_tilde(const char *d)
 {
-    char *h = NULL, *r;
-    const char *p;
+    char *h = NULL, *r = NULL;
+    const char *p = NULL;
     size_t ld;
     size_t lh = 0;
 
@@ -1121,7 +1131,7 @@ char *ssh_path_expand_tilde(const char *d)
 #ifdef _WIN32
         return strdup(d);
 #else
-        struct passwd *pw;
+        struct passwd *pw = NULL;
         size_t s = p - d;
         char u[128];
 
@@ -1182,7 +1192,7 @@ char *ssh_path_expand_escape(ssh_session session, const char *s)
     char *buf = NULL;
     char *r = NULL;
     char *x = NULL;
-    const char *p;
+    const char *p = NULL;
     size_t i, l;
 
     r = ssh_path_expand_tilde(s);
@@ -1335,8 +1345,8 @@ char *ssh_path_expand_escape(ssh_session session, const char *s)
  */
 int ssh_analyze_banner(ssh_session session, int server)
 {
-    const char *banner;
-    const char *openssh;
+    const char *banner = NULL;
+    const char *openssh = NULL;
 
     if (server) {
         banner = session->clientbanner;
@@ -1364,7 +1374,7 @@ int ssh_analyze_banner(ssh_session session, int server)
           return -1;
     }
 
-    SSH_LOG(SSH_LOG_PROTOCOL, "Analyzing banner: %s", banner);
+    SSH_LOG(SSH_LOG_DEBUG, "Analyzing banner: %s", banner);
 
     switch (banner[4]) {
         case '2':
@@ -1387,6 +1397,7 @@ int ssh_analyze_banner(ssh_session session, int server)
         char *tmp = NULL;
         unsigned long int major = 0UL;
         unsigned long int minor = 0UL;
+        int off = 0;
 
         /*
          * The banner is typical:
@@ -1406,8 +1417,9 @@ int ssh_analyze_banner(ssh_session session, int server)
             }
 
             errno = 0;
-            minor = strtoul(openssh + 10, &tmp, 10);
-            if ((tmp == (openssh + 10)) ||
+            off = major >= 10 ? 11 : 10;
+            minor = strtoul(openssh + off, &tmp, 10);
+            if ((tmp == (openssh + off)) ||
                 ((errno == ERANGE) && (major == ULONG_MAX)) ||
                 ((errno != 0) && (major == 0)) ||
                 (minor > 100)) {
@@ -1418,7 +1430,7 @@ int ssh_analyze_banner(ssh_session session, int server)
 
             session->openssh = SSH_VERSION_INT(((int) major), ((int) minor), 0);
 
-            SSH_LOG(SSH_LOG_PROTOCOL,
+            SSH_LOG(SSH_LOG_DEBUG,
                     "We are talking to an OpenSSH %s version: %lu.%lu (%x)",
                     server ? "client" : "server",
                     major, minor, session->openssh);
@@ -1522,7 +1534,7 @@ int ssh_timeout_elapsed(struct ssh_timestamp *ts, int timeout)
                   * -2 means user-defined timeout as available in
                   * session->timeout, session->timeout_usec.
                   */
-            SSH_LOG(SSH_LOG_WARN, "ssh_timeout_elapsed called with -2. this needs to "
+            SSH_LOG(SSH_LOG_DEBUG, "ssh_timeout_elapsed called with -2. this needs to "
                             "be fixed. please set a breakpoint on misc.c:%d and "
                             "fix the caller\n", __LINE__);
             return 0;
@@ -1559,32 +1571,6 @@ int ssh_timeout_update(struct ssh_timestamp *ts, int timeout)
     ms = 0;
   ret = timeout - ms;
   return ret >= 0 ? ret: 0;
-}
-
-
-int ssh_match_group(const char *group, const char *object)
-{
-    const char *a;
-    const char *z;
-
-    z = group;
-    do {
-        a = strchr(z, ',');
-        if (a == NULL) {
-            if (strcmp(z, object) == 0) {
-                return 1;
-            }
-            return 0;
-        } else {
-            if (strncmp(z, object, a - z) == 0) {
-                return 1;
-            }
-        }
-        z = a + 1;
-    } while(1);
-
-    /* not reached */
-    return 0;
 }
 
 #if !defined(HAVE_EXPLICIT_BZERO)
@@ -1676,20 +1662,20 @@ int ssh_quote_file_name(const char *file_name, char *buf, size_t buf_len)
     enum ssh_quote_state_e state = NO_QUOTE;
 
     if (file_name == NULL || buf == NULL || buf_len == 0) {
-        SSH_LOG(SSH_LOG_WARNING, "Invalid parameter");
+        SSH_LOG(SSH_LOG_TRACE, "Invalid parameter");
         return SSH_ERROR;
     }
 
     /* Only allow file names smaller than 32kb. */
     if (strlen(file_name) > 32 * 1024) {
-        SSH_LOG(SSH_LOG_WARNING, "File name too long");
+        SSH_LOG(SSH_LOG_TRACE, "File name too long");
         return SSH_ERROR;
     }
 
     /* Paranoia check */
     required_buf_len = (size_t)3 * strlen(file_name) + 1;
     if (required_buf_len > buf_len) {
-        SSH_LOG(SSH_LOG_WARNING, "Buffer too small");
+        SSH_LOG(SSH_LOG_TRACE, "Buffer too small");
         return SSH_ERROR;
     }
 
@@ -1847,7 +1833,7 @@ int ssh_newline_vis(const char *string, char *buf, size_t buf_len)
     }
 
     if ((2 * strlen(string) + 1) > buf_len) {
-        SSH_LOG(SSH_LOG_WARNING, "Buffer too small");
+        SSH_LOG(SSH_LOG_TRACE, "Buffer too small");
         return SSH_ERROR;
     }
 
@@ -1987,7 +1973,7 @@ char *ssh_strreplace(const char *src, const char *pattern, const char *replace)
  */
 char *ssh_strerror(int err_num, char *buf, size_t buflen)
 {
-#if defined(__linux__) && defined(__GLIBC__) && defined(_GNU_SOURCE)
+#if ((defined(__linux__) && defined(__GLIBC__)) || defined(__CYGWIN__)) && defined(_GNU_SOURCE)
     /* GNU extension on Linux */
     return strerror_r(err_num, buf, buflen);
 #else
@@ -2005,7 +1991,118 @@ char *ssh_strerror(int err_num, char *buf, size_t buflen)
         buf[0] = '\0';
     }
     return buf;
-#endif /* defined(__linux__) && defined(__GLIBC__) && defined(_GNU_SOURCE) */
+#endif /* ((defined(__linux__) && defined(__GLIBC__)) || defined(__CYGWIN__)) && defined(_GNU_SOURCE) */
+}
+
+/**
+ * @brief Read the requested number of bytes from a local file.
+ *
+ * A call to read() may perform a short read even when sufficient data is
+ * present in the file. This function can be used to avoid such short reads.
+ *
+ * This function tries to read the requested number of bytes from the file
+ * until one of the following occurs :
+ *     - Requested number of bytes are read.
+ *     - EOF is encountered before reading the requested number of bytes.
+ *     - An error occurs.
+ *
+ * On encountering an error due to an interrupt, this function ignores that
+ * error and continues trying to read the data.
+ *
+ * @param[in] fd          The file descriptor of the local file to read from.
+ *
+ * @param[out] buf        Pointer to a buffer in which read data will be
+ *                        stored.
+ *
+ * @param[in] nbytes      Number of bytes to read.
+ *
+ * @returns               Number of bytes read on success,
+ *                        SSH_ERROR on error with errno set to indicate the
+ *                        error.
+ */
+ssize_t ssh_readn(int fd, void *buf, size_t nbytes)
+{
+    size_t total_bytes_read = 0;
+    ssize_t bytes_read;
+
+    if (fd < 0 || buf == NULL || nbytes == 0) {
+        errno = EINVAL;
+        return SSH_ERROR;
+    }
+
+    do {
+        bytes_read = read(fd,
+                          ((char *)buf) + total_bytes_read,
+                          nbytes - total_bytes_read);
+        if (bytes_read == -1) {
+            if (errno == EINTR) {
+                /* Ignoring errors due to signal interrupts */
+                continue;
+            }
+
+            return SSH_ERROR;
+        }
+
+        if (bytes_read == 0) {
+            /* EOF encountered on the local file before reading nbytes */
+            break;
+        }
+
+        total_bytes_read += (size_t)bytes_read;
+    } while (total_bytes_read < nbytes);
+
+    return total_bytes_read;
+}
+
+/**
+ * @brief Write the requested number of bytes to a local file.
+ *
+ * A call to write() may perform a short write on a local file. This function
+ * can be used to avoid short writes.
+ *
+ * This function tries to write the requested number of bytes until those many
+ * bytes are written or some error occurs.
+ *
+ * On encountering an error due to an interrupt, this function ignores that
+ * error and continues trying to write the data.
+ *
+ * @param[in] fd          The file descriptor of the local file to write to.
+ *
+ * @param[in] buf         Pointer to a buffer in which data to write is stored.
+ *
+ * @param[in] nbytes      Number of bytes to write.
+ *
+ * @returns               Number of bytes written on success,
+ *                        SSH_ERROR on error with errno set to indicate the
+ *                        error.
+ */
+ssize_t ssh_writen(int fd, const void *buf, size_t nbytes)
+{
+    size_t total_bytes_written = 0;
+    ssize_t bytes_written;
+
+    if (fd < 0 || buf == NULL || nbytes == 0) {
+        errno = EINVAL;
+        return SSH_ERROR;
+    }
+
+    do {
+        bytes_written = write(fd,
+                              ((const char *)buf) + total_bytes_written,
+                              nbytes - total_bytes_written);
+        if (bytes_written == -1) {
+            if (errno == EINTR) {
+                /* Ignoring errors due to signal interrupts */
+                continue;
+            }
+
+            return SSH_ERROR;
+        }
+
+        total_bytes_written += (size_t)bytes_written;
+    } while (total_bytes_written < nbytes);
+
+    return total_bytes_written;
 }
 
 /**
@@ -2072,6 +2169,79 @@ int ssh_check_hostname_syntax(const char *hostname)
     free(s);
 
     return SSH_OK;
+}
+
+/**
+ * @brief Checks syntax of a username
+ *
+ * This check disallows metacharacters in the username
+ *
+ * @param username The username to be checked, has to be null terminated
+ *
+ * @return SSH_OK if the username passes syntax check
+ *         SSH_ERROR otherwise or if username is NULL or empty string
+ */
+int ssh_check_username_syntax(const char *username)
+{
+    size_t username_len;
+
+    if (username == NULL || *username == '-') {
+        return SSH_ERROR;
+    }
+
+    username_len = strlen(username);
+    if (username_len == 0 || username[username_len - 1] == '\\' ||
+        strpbrk(username, "'`\";&<>|(){}") != NULL) {
+        return SSH_ERROR;
+    }
+    for (size_t i = 0; i < username_len; i++) {
+        if (isspace(username[i]) != 0 && username[i + 1] == '-') {
+            return SSH_ERROR;
+        }
+    }
+
+    return SSH_OK;
+}
+
+/**
+ * @brief Free proxy jump list
+ *
+ * Frees everything in a proxy jump list, but doesn't free the ssh_list
+ *
+ * @param proxy_jump_list
+ *
+ */
+void
+ssh_proxyjumps_free(struct ssh_list *proxy_jump_list)
+{
+    struct ssh_jump_info_struct *jump = NULL;
+
+    for (jump =
+             ssh_list_pop_head(struct ssh_jump_info_struct *, proxy_jump_list);
+         jump != NULL;
+         jump = ssh_list_pop_head(struct ssh_jump_info_struct *,
+                                  proxy_jump_list)) {
+        SAFE_FREE(jump->hostname);
+        SAFE_FREE(jump->username);
+        SAFE_FREE(jump);
+    }
+}
+
+/**
+ * @brief Check if libssh proxy jumps is enabled
+ *
+ * If env variable OPENSSH_PROXYJUMP is set to 1 then proxyjump will be
+ * through the OpenSSH binary.
+ *
+ * @return false if OPENSSH_PROXYJUMP=1
+ *         true otherwise
+ */
+bool
+ssh_libssh_proxy_jumps(void)
+{
+    const char *t = getenv("OPENSSH_PROXYJUMP");
+
+    return !(t != NULL && t[0] == '1');
 }
 
 /** @} */

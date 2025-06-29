@@ -1,3 +1,64 @@
+libssh (0.11.2-1) unstable; urgency=medium
+
+  * New upstream security/bug fix release:
+    - CVE-2025-4877: Write beyond bounds in binary to base64 conversion
+      functions
+    - CVE-2025-4878: Use of uninitialized variable in privatekey_from_file()
+    - CVE-2025-5318: Likely read beyond bounds in sftp server handle
+      management
+    - CVE-2025-5351: Double free in functions exporting keys
+    - CVE-2025-5372: ssh_kdf() returns a success code on certain failures
+    - CVE-2025-5449: Likely read beyond bounds in sftp server message decoding
+    - CVE-2025-5987: Invalid return code for chacha20 poly1305 with OpenSSL
+      backend
+    (Closes: #1108407)
+  * Drop 0001-Fix-multiple-digit-major-version-for-OpenSSH.patch.
+    Applied upstream.
+
+ -- Martin Pitt <mpitt@debian.org>  Sat, 28 Jun 2025 07:42:47 +0200
+
+libssh (0.11.1-2) unstable; urgency=medium
+
+  * Fix multiple digit major version for OpenSSH.
+    Patch cherry-picked from upstream master. (Closes: #1103224)
+  * Update Standards-Version to 4.7.2.  No changes necessary.
+  * debian/copyright: Move to FSF URL.
+    Fixes "old-fsf-address-in-copyright-file" lintian warning.
+
+ -- Martin Pitt <mpitt@debian.org>  Tue, 22 Apr 2025 12:21:58 +0000
+
+libssh (0.11.1-1) unstable; urgency=medium
+
+  [ Simon Josefsson ]
+  * New upstream version 0.11.1 (Closes: #1078677)
+  * Add new upstream signing key to d/upstream/signing-key.asc
+  * Refresh patches for new upstream release.
+    Drop 0001-Fix-regression-in-IPv6-addresses-in-hostname-parsing.patch and
+    0002-tests-Increase-test-coverage-for-IPv6-address-parsin.patch, applied
+    upstream.
+  * Update symbols file
+  * Use pkgconf instead of obsolete pkg-config
+  * Add d/upstream/metadata
+  * Bump d/copyright years
+
+  [ Bastian Germann ]
+  * Drop gcrypt flavor (Closes: #1074337)
+  * d/copyright: Move blowfish files to their own section
+
+  [ Martin Pitt ]
+  * Bump Standards-Version to 4.7.0
+
+  [ Debian Janitor ]
+  * debian/control: Remove constraints unnecessary since buster (oldstable)
+
+ -- Martin Pitt <mpitt@debian.org>  Wed, 04 Sep 2024 08:27:52 +0200
+
+libssh (0.10.6-3) unstable; urgency=medium
+
+  * debian/copyright: Add bcrypt_pbkdf.c (Closes: #1071567)
+
+ -- Martin Pitt <mpitt@debian.org>  Mon, 03 Jun 2024 07:32:19 +0200
+
 libssh (0.10.6-2) unstable; urgency=medium
 
   * Fix regression in IPv6 addresses in hostname parsing.

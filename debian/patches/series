@@ -1,5 +1,3 @@
-0001-Fix-regression-in-IPv6-addresses-in-hostname-parsing.patch
-0002-tests-Increase-test-coverage-for-IPv6-address-parsin.patch
 1003-custom-lib-names.patch
 2003-disable-expand_tilde_unix-test.patch
 2004-install-static-lib.patch
