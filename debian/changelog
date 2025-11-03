@@ -1,3 +1,17 @@
+libssh (0.11.3-1) unstable; urgency=medium
+
+  * New upstream security/bug fix release:
+    - CVE-2025-8114: Fix NULL pointer dereference after allocation failure
+      (Closes: #1109860)
+    - CVE-2025-8277: Fix memory leak of ephemeral key pair during repeated
+      wrong KEX (Closes: #1114859)
+    - Potential use-after-free when send() fails during key exchange
+    - Fix possible timeout during KEX if client sends authentication too early
+    - Cleanup OpenSSL PKCS#11 provider when loaded
+    - Zeroize buffers containing private key blobs during export
+
+ -- Martin Pitt <mpitt@debian.org>  Sun, 14 Sep 2025 09:54:50 +0200
+
 libssh (0.11.2-1) unstable; urgency=medium
 
   * New upstream security/bug fix release:
