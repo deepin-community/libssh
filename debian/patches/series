@@ -1,3 +1,4 @@
 1003-custom-lib-names.patch
 2003-disable-expand_tilde_unix-test.patch
 2004-install-static-lib.patch
+2005-fix-CVE-2026-3731.patch
