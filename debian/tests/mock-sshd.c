@@ -142,19 +142,25 @@ auth_password (const gchar *user,
 }
 
 static int
-auth_publickey (ssh_message message)
+auth_publickey (ssh_session session,
+                const char *user,
+                struct ssh_key_struct *pubkey,
+                char signature_state,
+                void *userdata)
 {
-  int ret = -1;
-  int auth_state = ssh_message_auth_publickey_state (message);
-  gboolean have = ssh_key_cmp (state.pkey,
-                               ssh_message_auth_pubkey (message),
-                               SSH_KEY_CMP_PUBLIC) == 0;
-  if (have && auth_state == SSH_PUBLICKEY_STATE_VALID)
-    ret = 1;
-  else if (have && auth_state == SSH_PUBLICKEY_STATE_NONE)
-    ret = 0;
+  (void)session;
+  (void)user;
+  (void)userdata;
 
-  return ret;
+  gboolean have = ssh_key_cmp (state.pkey,
+                               pubkey,
+                               SSH_KEY_CMP_PUBLIC) == 0;
+  if (have && signature_state == SSH_PUBLICKEY_STATE_VALID)
+    return SSH_AUTH_SUCCESS;
+  else if (have && signature_state == SSH_PUBLICKEY_STATE_NONE)
+    return SSH_AUTH_SUCCESS;
+
+  return SSH_AUTH_DENIED;
 }
 
 static int
@@ -447,108 +453,49 @@ accept:
   return 0;
 }
 
-static int
+static ssh_channel
 channel_open_callback (ssh_session session,
-                       ssh_message message,
-                       gpointer user_data)
+                       void *userdata)
 {
-  ssh_channel *channel = user_data;
+  (void)userdata;
 
-  /* wait for a channel session */
-  switch (ssh_message_type (message))
-    {
-    case SSH_REQUEST_CHANNEL_OPEN:
-      switch (ssh_message_subtype (message))
-        {
-        case SSH_CHANNEL_SESSION:
-          goto accept;
-        default:
-          goto deny;
-        }
-    default:
-      goto deny;
-    }
-
-deny:
-  return 1;
-accept:
+  g_message ("Allocated session channel");
+  state.channel = ssh_channel_new (session);
   ssh_set_message_callback (state.session, channel_request_callback, NULL);
-  *channel = ssh_message_channel_request_open_reply_accept (message);
-  return 0;
+  return state.channel;
 }
 
 static int
-authenticate_callback (ssh_session session,
-                       ssh_message message,
-                       gpointer user_data)
+auth_password_callback (ssh_session session,
+                        const char *user,
+                        const char *password,
+                        void *userdata)
+{
+  (void)session;
+  (void)userdata;
+
+  if (auth_password (user, password))
+    return SSH_AUTH_SUCCESS;
+
+  return SSH_AUTH_DENIED;
+}
+
+static int
+auth_interactive_callback (ssh_message message,
+                           ssh_session session,
+                           void *userdata)
 {
   int rc;
-  int *round = user_data;
+  int *round = userdata;
 
-  g_warning("authenticate_callback: round %i, message type %i", *round, ssh_message_subtype (message));
-  switch (ssh_message_type (message))
-    {
-    case SSH_REQUEST_AUTH:
-      switch (ssh_message_subtype (message))
-        {
-        case SSH_AUTH_METHOD_INTERACTIVE:
-          if (auth_methods & SSH_AUTH_METHOD_INTERACTIVE)
-            {
-              rc = auth_interactive (session, message, round);
-              if (rc == SUCCESS)
-                goto accept;
-              else if (rc == MORE)
-                goto more;
-            }
-            ssh_message_auth_set_methods (message, auth_methods);
-            goto deny;
-        case SSH_AUTH_METHOD_PASSWORD:
-          if ((auth_methods & SSH_AUTH_METHOD_PASSWORD) &&
-              auth_password (ssh_message_auth_user (message),
-                             ssh_message_auth_password (message)))
-            goto accept;
-          ssh_message_auth_set_methods (message, auth_methods);
-          goto deny;
+  g_warning("auth_interactive_callback: round %i", *round);
+  rc = auth_interactive (session, message, round);
+  if (rc == SUCCESS)
+    return SSH_AUTH_SUCCESS;
+  else if (rc == MORE)
+    return SSH_AUTH_INFO;
 
-        case SSH_AUTH_METHOD_PUBLICKEY:
-          if (auth_methods & SSH_AUTH_METHOD_PUBLICKEY)
-            {
-              int result = auth_publickey (message);
-              if (result == 1)
-                {
-                  goto accept;
-                }
-              else if (result == 0)
-                {
-                  ssh_message_auth_reply_pk_ok_simple (message);
-                  return 0;
-                }
-            }
-          ssh_message_auth_set_methods (message, auth_methods);
-          goto deny;
-
-        case SSH_AUTH_METHOD_NONE:
-        default:
-          ssh_message_auth_set_methods (message, auth_methods);
-          goto deny;
-        }
-
-    default:
-      ssh_message_auth_set_methods (message, auth_methods);
-      goto deny;
-    }
-
-deny:
-  g_warning("authenticate_callback: round %i, message type %i, deny, ret 1", *round, ssh_message_subtype (message));
-  return 1;
-more:
-  g_warning("authenticate_callback: round %i, message type %i, more, ret 0", *round, ssh_message_subtype (message));
-  return 0;
-accept:
-  g_warning("authenticate_callback: round %i, message type %i, accept, ret 0", *round, ssh_message_subtype (message));
-  ssh_set_message_callback (state.session, channel_open_callback, &state.channel);
-  ssh_message_auth_reply_success (message, 0);
-  return 0;
+  return SSH_AUTH_DENIED;
 }
 
 static gint
@@ -567,6 +514,13 @@ mock_ssh_server (const gchar *server_addr,
   const char *msg;
   int r;
   gint rounds = 0;
+  struct ssh_server_callbacks_struct server_cb = {
+    .userdata = &rounds,
+    .auth_password_function = auth_password_callback,
+    .auth_pubkey_function = auth_publickey,
+    .auth_kbdint_function = auth_interactive_callback,
+    .channel_open_request_session_function = channel_open_callback
+  };
 
   state.event = ssh_event_new ();
   if (state.event == NULL)
@@ -630,7 +584,9 @@ mock_ssh_server (const gchar *server_addr,
   /* Close stdout (once above info is printed) */
   close (1);
 
-  ssh_set_message_callback (state.session, authenticate_callback, &rounds);
+  ssh_callbacks_init (&server_cb);
+  ssh_set_server_callbacks (state.session, &server_cb);
+  ssh_set_auth_methods (state.session, auth_methods);
 
   r = ssh_bind_accept (sshbind, state.session);
   if (r == SSH_ERROR)

@@ -1,3 +1,39 @@
+libssh (0.12.0-2) unstable; urgency=medium
+
+  * Add missing doxygen-awesome-css build dep.
+    This avoids trying to download the extension from the Internet during
+    build. Thanks to Santiago Vila for reporting and Sven Müller for
+    figuring out the patch! (Closes: #1130941)
+  * libssh-dev: Add missing krb5-multidev dependency.
+    Version 0.12 introduced this requirement. Thanks to Simon McVittie!
+    (Closes: #1130972)
+  * autopkgtest: Port mock-sshd.c to current callback based API.
+    Remove usage of the deprecated ssh_message_auth_pubkey() etc. API.
+  * autopktest: Test multi-step authentication.
+    Our mock ssh server already supports multi-step ("2FA") authentication.
+    Expand the test to actually exercise that. Add an askpass script that
+    reacts to the various prompts.
+
+ -- Martin Pitt <mpitt@debian.org>  Thu, 19 Mar 2026 10:23:23 +0000
+
+libssh (0.12.0-1) unstable; urgency=medium
+
+  * New upstream security/feature release:
+    - CVE-2026-0964: SCP Protocol Path Traversal in ssh_scp_pull_request()
+    - CVE-2026-0965: Possible Denial of Service when parsing unexpected
+      configuration files
+    - CVE-2026-0966: Buffer underflow in ssh_get_hexa() on invalid input
+    - CVE-2026-0967: Specially crafted patterns could cause DoS
+    - CVE-2026-0968: OOB Read in sftp_parse_longname()
+    - CVE-2026-3731: Read buffer overrun when handling SFTP extensions
+    - Note: CVE-2025-14821 is Windows specific, does not apply to Linux
+    (Closes: #1127693)
+  * Enable new FIDO/U2F support. Build-depend on libfido2-dev.
+  * Drop "Priority: optional" field.  Debian Policy 4.7.3 made this obsolete.
+    Bump Standards-Version accordingly.
+
+ -- Martin Pitt <mpitt@debian.org>  Sun, 15 Mar 2026 08:56:59 +0000
+
 libssh (0.11.3-1) unstable; urgency=medium
 
   * New upstream security/bug fix release:

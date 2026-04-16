@@ -50,3 +50,13 @@ OUT=$(ssh -i test_rsa -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=n
 
 waitpid $SERVER_PID
 check_out
+
+echo "====== multi-step keyboard-interactive authentication ======"
+
+# run server with multi-step enabled
+SERVER_PID=$($SSHD --user=joe --password=$(./mock-ssh-askpass) --port $PORT --multi-step -v)
+
+OUT=$(DISPLAY= SSH_ASKPASS=`pwd`/mock-ssh-askpass-multistep SSH_ASKPASS_REQUIRE=force setsid ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o PreferredAuthentications=keyboard-interactive -p $PORT joe@localhost cat /etc/os-release)
+
+waitpid $SERVER_PID
+check_out

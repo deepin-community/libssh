@@ -5,28 +5,24 @@ Author: Laurent Bigonville <bigon@debian.org>
 Forwarded: not-needed
 Last-Update: 2024-09-02
 
---- a/tests/unittests/torture_misc.c
-+++ b/tests/unittests/torture_misc.c
-@@ -1136,11 +1136,11 @@ int torture_run_tests(void) {
-         cmocka_unit_test(torture_basename),
-         cmocka_unit_test(torture_dirname),
-         cmocka_unit_test(torture_ntohll),
--#ifdef _WIN32
--        cmocka_unit_test(torture_path_expand_tilde_win),
--#else
+Index: libssh/tests/unittests/torture_misc.c
+===================================================================
+--- libssh.orig/tests/unittests/torture_misc.c
++++ libssh/tests/unittests/torture_misc.c
+@@ -1293,7 +1293,7 @@ int torture_run_tests(void) {
+ #ifdef _WIN32
+         cmocka_unit_test(torture_path_expand_tilde_win),
+ #else
 -        cmocka_unit_test(torture_path_expand_tilde_unix),
--#endif
-+//#ifdef _WIN32
-+//        cmocka_unit_test(torture_path_expand_tilde_win),
-+//#else
 +//        cmocka_unit_test(torture_path_expand_tilde_unix),
-+//#endif
-         cmocka_unit_test_setup_teardown(torture_path_expand_escape, setup, teardown),
-         cmocka_unit_test_setup_teardown(torture_path_expand_known_hosts, setup, teardown),
-         cmocka_unit_test_setup_teardown(torture_path_expand_percent, setup, teardown),
---- a/tests/unittests/torture_config.c
-+++ b/tests/unittests/torture_config.c
-@@ -2391,7 +2391,7 @@ static void torture_config_make_absolute_int(void **state, bool no_sshdir_fails)
+ #endif
+         cmocka_unit_test_setup_teardown(torture_path_expand_escape,
+                                         setup,
+Index: libssh/tests/unittests/torture_config.c
+===================================================================
+--- libssh.orig/tests/unittests/torture_config.c
++++ libssh/tests/unittests/torture_config.c
+@@ -2672,7 +2672,7 @@ static void torture_config_make_absolute
  {
      ssh_session session = *state;
      char *result = NULL;
@@ -35,10 +31,10 @@ Last-Update: 2024-09-02
      char h[256] = {0};
      char *user = NULL;
      char *home = NULL;
-@@ -2506,7 +2506,7 @@ static void torture_config_make_absolute
+@@ -2716,7 +2716,7 @@ static void torture_config_make_absolute
      assert_string_equal(result, "/tmp/ssh/my_config");
      free(result);
-
+ 
 -#ifndef _WIN32
 +#if 0
      /* Tilde expansion works only in user config */
