@@ -1,3 +1,16 @@
+libssh (0.11.3-1deepin2) unstable; urgency=medium
+
+  * CVE-2026-0966: Fix heap buffer underflow in ssh_get_hexa()  The
+    ssh_get_hexa() function does not check for NULL pointer input or
+    zero-length input before computing hlen = len * 3, leading to a heap
+    buffer underflow when hlen=0 and hexa[-1] = '\0' is executed.
+    Additionally, no NULL check on the input pointer can lead to a NULL
+    pointer dereference.  This is exploitable remotely during GSSAPI
+    authentication when server logging verbosity is set to
+    SSH_LOG_PACKET (3) or higher.
+
+ -- deepin-ci-robot <packages@deepin.org>  Wed, 03 Jun 2026 09:45:35 +0800
+
 libssh (0.11.3-1deepin1) unstable; urgency=medium
 
   * Fix CVE-2026-3731: out-of-bounds read in sftp_extensions_get_name
