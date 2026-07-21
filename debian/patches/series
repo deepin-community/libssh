@@ -3,3 +3,4 @@
 2004-install-static-lib.patch
 2005-fix-CVE-2026-3731.patch
 CVE-2026-0967.patch
+CVE-2026-0964.patch
