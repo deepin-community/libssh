@@ -1,3 +1,9 @@
+libssh (0.11.3-1deepin6) unstable; urgency=medium
+
+  * fix(cve): CVE-2026-59844
+
+ -- deepin-ci-robot <packages@deepin.org>  Mon, 27 Jul 2026 12:10:33 +0800
+
 libssh (0.11.3-1deepin5) unstable; urgency=medium
 
   * fix(cve): CVE-2026-0965
